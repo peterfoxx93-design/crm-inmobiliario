@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Command, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
+import { sanitizeSearchTerm } from "@/lib/search";
 import { createClient } from "@/lib/supabase/client";
 
 interface PropertyHit {
@@ -56,7 +57,7 @@ export function UniversalSearch() {
   }, []);
 
   useEffect(() => {
-    const safeTerm = term.replace(/[%,()]/g, " ").trim();
+    const safeTerm = sanitizeSearchTerm(term);
     if (safeTerm.length < MIN_TERM_LENGTH) return;
 
     let cancelled = false;

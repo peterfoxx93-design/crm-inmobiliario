@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filtrarLeadsSinActividadReciente } from "@/lib/avisos";
 import { createClient } from "@/lib/supabase/client";
 
 interface TaskHit {
@@ -26,7 +27,9 @@ interface LeadHit {
 
 /**
  * Campana de avisos (brief Step 2): cuenta tareas pendientes con vencimiento
- * hoy o pasado + leads `status='nuevo'` sin actividad durante >24h.
+ * hoy o pasado + leads `status='nuevo'` sin actividad durante >24h. Los leads
+ * con alguna actividad en las ultimas 24h se excluyen (segunda consulta a
+ * activities); si esa consulta falla, se muestran tal cual.
  * Tolerante a fallo: si la BD aun no existe, el contador es 0 y la lista vacia.
  */
 export function AvisosBell() {
@@ -43,8 +46,10 @@ export function AvisosBell() {
       endOfToday.setHours(23, 59, 59, 999);
       const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      // Cada consulta se tolera por separado: error -> lista vacia.
-      const [tareasRes, leadsRes] = await Promise.all([
+      // Cada consulta se tolera por separado: error -> lista vacia. La de
+      // actividad solo alimenta la exclusion de leads: si falla, data es null
+      // y no se excluye a nadie (degrada al comportamiento previo).
+      const [tareasRes, leadsRes, actRes] = await Promise.all([
         supabase
           .from("activities")
           .select("id,title,due_date")
@@ -59,11 +64,28 @@ export function AvisosBell() {
           .eq("status", "nuevo")
           .lte("created_at", hace24h)
           .order("created_at")
-          .limit(8),
+          // Pool mayor al visible: tras excluir los leads con actividad
+          // reciente se recorta al maximo mostrado.
+          .limit(25),
+        supabase
+          .from("activities")
+          .select("contact_id")
+          .gte("created_at", hace24h),
       ]);
       if (cancelled) return;
       setTasks((tareasRes.data ?? []) as TaskHit[]);
-      setLeads((leadsRes.data ?? []) as LeadHit[]);
+
+      const idsConActividad = new Set(
+        ((actRes.data ?? []) as { contact_id: string | null }[])
+          .map((row) => row.contact_id)
+          .filter((id): id is string => id !== null),
+      );
+      setLeads(
+        filtrarLeadsSinActividadReciente(
+          (leadsRes.data ?? []) as LeadHit[],
+          idsConActividad,
+        ).slice(0, 8),
+      );
       setLoading(false);
     }
 
