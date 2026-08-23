@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildReference, formatCurrency, formatDate, isStageOverdue } from "@/lib/format";
+import {
+  buildReference,
+  daysInStage,
+  formatCompactEur,
+  formatCurrency,
+  formatDate,
+  isStageOverdue,
+} from "@/lib/format";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -40,6 +47,44 @@ describe("formatDate", () => {
 
   it("acepta cadenas ISO", () => {
     expect(formatDate("2025-11-15T10:00:00Z")).toMatch(/^15 nov 2025$/);
+  });
+});
+
+describe("formatCompactEur", () => {
+  it("compacta millones con un decimal", () => {
+    const result = formatCompactEur(1_200_000);
+    expect(result).toContain("1,2");
+    expect(result).toContain("M");
+  });
+
+  it("incluye el simbolo del euro", () => {
+    expect(formatCompactEur(950_000)).toContain("€");
+  });
+
+  it("miles compactados como mil (CLDR es-ES)", () => {
+    expect(formatCompactEur(12_000)).toContain("mil");
+  });
+});
+
+describe("daysInStage", () => {
+  it("cuenta dias completos transcurridos", () => {
+    const hace3Dias = new Date(Date.now() - 3 * DAY_MS);
+    expect(daysInStage(hace3Dias)).toBe(3);
+  });
+
+  it("acepta cadenas ISO", () => {
+    const iso = new Date(Date.now() - 5 * DAY_MS).toISOString();
+    expect(daysInStage(iso)).toBe(5);
+  });
+
+  it("devuelve 0 para fecha futura (negativo)", () => {
+    const en1Dia = new Date(Date.now() + DAY_MS);
+    expect(daysInStage(en1Dia)).toBe(0);
+  });
+
+  it("devuelve 0 para null o fecha invalida", () => {
+    expect(daysInStage(null)).toBe(0);
+    expect(daysInStage("no-es-una-fecha")).toBe(0);
   });
 });
 

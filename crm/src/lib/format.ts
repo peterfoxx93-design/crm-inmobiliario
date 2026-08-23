@@ -17,6 +17,19 @@ export function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
 }
 
+/** Formateo compacto para cabeceras de columna del pipeline ("1,2 M €"). */
+const compactCurrencyFormatter = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** Importe compacto en EUR (ej. 1200000 -> "1,2 M €"). */
+export function formatCompactEur(value: number): string {
+  return compactCurrencyFormatter.format(value);
+}
+
 /** Formatea una fecha (Date o ISO string) como "dd MMM yyyy" en espanol. */
 export function formatDate(date: Date | string): string {
   const parsed = typeof date === "string" ? new Date(date) : date;
@@ -52,6 +65,22 @@ export function isStageOverdue(
     typeof stageUpdatedAt === "string" ? new Date(stageUpdatedAt) : stageUpdatedAt;
   const elapsedDays = (Date.now() - updated.getTime()) / DAY_MS;
   return elapsedDays > limitDays;
+}
+
+/**
+ * Dias completos que el deal lleva en su etapa actual (contador del pipeline).
+ * Fecha futura, invalida o ausente -> 0 (nunca negativo).
+ */
+export function daysInStage(
+  stageUpdatedAt: Date | string | null | undefined,
+  now: Date = new Date(),
+): number {
+  if (!stageUpdatedAt) return 0;
+  const updated =
+    typeof stageUpdatedAt === "string" ? new Date(stageUpdatedAt) : stageUpdatedAt;
+  const elapsedMs = now.getTime() - updated.getTime();
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
+  return Math.floor(elapsedMs / DAY_MS);
 }
 
 const MINUTE_S = 60;
