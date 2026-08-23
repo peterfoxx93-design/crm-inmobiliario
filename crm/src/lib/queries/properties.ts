@@ -142,3 +142,20 @@ export async function listPropertyActivities(
 
   return (data ?? []) as Activity[];
 }
+
+/** Opciones ligeras para selects (dialogo de oferta, Task 12). */
+export async function listPropertyOptions(): Promise<
+  Array<{ id: string; title: string; reference: string }>
+> {
+  const supabase = await createServerSupabase();
+
+  const { data, error } = await supabase
+    .from("properties")
+    .select("id, title, reference")
+    .neq("status", "retirado")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) return [];
+  return (data ?? []) as Array<{ id: string; title: string; reference: string }>;
+}

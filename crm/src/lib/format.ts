@@ -53,3 +53,33 @@ export function isStageOverdue(
   const elapsedDays = (Date.now() - updated.getTime()) / DAY_MS;
   return elapsedDays > limitDays;
 }
+
+const MINUTE_S = 60;
+const HOUR_S = 60 * MINUTE_S;
+const DAY_S = 24 * HOUR_S;
+
+const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+
+/**
+ * Tiempo relativo en espanol para la columna "ultima actividad"
+ * ("hace 5 minutos", "hace 3 horas", "hace 2 dias"; a partir de 30 dias
+ * cae a fecha corta via formatDate).
+ */
+export function formatRelativeTime(
+  dateIso: Date | string,
+  now: Date = new Date(),
+): string {
+  const date = typeof dateIso === "string" ? new Date(dateIso) : dateIso;
+  if (Number.isNaN(date.getTime())) return "—";
+
+  const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+
+  if (absSeconds >= 30 * DAY_S) return formatDate(date);
+  if (absSeconds < MINUTE_S) return rtf.format(Math.round(diffSeconds), "second");
+  if (absSeconds < HOUR_S)
+    return rtf.format(Math.round(diffSeconds / MINUTE_S), "minute");
+  if (absSeconds < DAY_S)
+    return rtf.format(Math.round(diffSeconds / HOUR_S), "hour");
+  return rtf.format(Math.round(diffSeconds / DAY_S), "day");
+}

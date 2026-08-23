@@ -142,3 +142,6 @@ export interface Activity {
   created_by: string;
   created_at: string;
 }
+
+/** Fila de activity opcionalmente enriquecida con el nombre del autor. */
+export type ActivityRow = Activity & { author_name?: string | null };

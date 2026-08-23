@@ -1,15 +1,4 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  FileText,
-  Info,
-  ListTodo,
-  Mail,
-  MapPin,
-  MessageCircle,
-  Phone,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,20 +7,17 @@ import { GalleryManager } from "@/components/properties/GalleryManager";
 import { PropertyForm } from "@/components/properties/PropertyForm";
 import { PropertyTabs } from "@/components/properties/PropertyTabs";
 import { StatusActions } from "@/components/properties/StatusActions";
+import { ActivityFeed } from "@/components/shared/ActivityFeed";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import {
-  ACTIVITY_TYPE_META,
-  OPERATION_LABELS,
-  PROPERTY_STATUS_META,
-} from "@/lib/constants";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { OPERATION_LABELS, PROPERTY_STATUS_META } from "@/lib/constants";
+import { formatCurrency } from "@/lib/format";
 import {
   getPropertyDetail,
   listPropertyActivities,
   type PropertyDetail,
 } from "@/lib/queries/properties";
-import type { Activity, ActivityType } from "@/lib/types";
+import type { Activity } from "@/lib/types";
 import { type PropertyInput } from "@/lib/validators/property";
 
 /**
@@ -147,56 +133,16 @@ function toFormDefaults(property: PropertyDetail): Partial<PropertyInput> {
   };
 }
 
-// Iconos lucide por tipo de actividad (nombres en constants.ts).
-
-const ICONS: Record<ActivityType, LucideIcon> = {
-  llamada: Phone,
-  email: Mail,
-  whatsapp: MessageCircle,
-  nota: FileText,
-  visita: MapPin,
-  tarea: ListTodo,
-  sistema: Info,
-};
-
 /**
- * Timeline cronologica de actividades de la propiedad. Hoy registra las
- * auditorias tipo 'sistema' (cambios de estado); Task 12 anadira visitas.
+ * Timeline de actividades de la propiedad (Task 12): reutiliza el
+ * ActivityFeed compartido, agrupado por dia y con autor resuelto.
  */
 function VisitsTimeline({ activities }: { activities: Activity[] }) {
-  if (activities.length === 0) {
-    return (
-      <EmptyState
-        icon={MapPin}
-        title="Aún no hay visitas registradas"
-        description="Las visitas agendadas y los cambios de estado aparecerán aquí en la línea de tiempo."
-      />
-    );
-  }
-
   return (
-    <ol aria-label="Historial de actividad" className="relative space-y-4 border-l pl-5">
-      {activities.map((activity) => {
-        const Icon = ICONS[activity.type] ?? Info;
-        const meta = ACTIVITY_TYPE_META[activity.type];
-        return (
-          <li key={activity.id} className="relative">
-            <span
-              aria-hidden
-              className="absolute -left-[31px] flex size-6 items-center justify-center rounded-full border bg-background"
-            >
-              <Icon className="size-3.5 text-muted-foreground" />
-            </span>
-            <p className="text-sm font-medium">{activity.title}</p>
-            <p className="text-xs text-muted-foreground">
-              {meta.label} · {formatDate(activity.created_at)}
-            </p>
-            {activity.body ? (
-              <p className="mt-1 text-sm text-muted-foreground">{activity.body}</p>
-            ) : null}
-          </li>
-        );
-      })}
-    </ol>
+    <ActivityFeed
+      activities={activities}
+      emptyTitle="Aún no hay visitas registradas"
+      emptyDescription="Las visitas agendadas y los cambios de estado aparecerán aquí en la línea de tiempo."
+    />
   );
 }
