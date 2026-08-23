@@ -53,6 +53,12 @@ export const brandSchema = z
         invalid_type_error: "La URL del logo debe ser un texto.",
       })
       .url("La URL del logo no es válida.")
+      // Endurecimiento review Task 16: .url() de zod acepta javascript:/data:.
+      // El logo solo puede vivir en https (Storage publico incluido).
+      .refine(
+        (value) => value.toLowerCase().startsWith("https://"),
+        "La URL del logo debe usar https://.",
+      )
       .nullable()
       .optional(),
     primaryColor: hexColorSchema.optional(),

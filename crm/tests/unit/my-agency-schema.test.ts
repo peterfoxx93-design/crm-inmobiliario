@@ -85,6 +85,16 @@ describe("brandSchema", () => {
   ])("rechaza logoUrl invalido (%j)", (logoUrl) => {
     expect(brandSchema.safeParse({ logoUrl }).success).toBe(false);
   });
+
+  // Endurecimiento review Task 16: .url() de zod acepta javascript:/data:/http.
+  it.each([
+    ["javascript:alert(1)"],
+    ["data:image/png;base64,AAAA"],
+    ["http://insecure.example/logo.png"],
+    ["ftp://files.example/logo.png"],
+  ])("rechaza logoUrl con esquema no https (%j)", (logoUrl) => {
+    expect(brandSchema.safeParse({ logoUrl }).success).toBe(false);
+  });
 });
 
 describe("parseSettingsTab", () => {

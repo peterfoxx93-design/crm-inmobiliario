@@ -15,6 +15,7 @@ import { ImageIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateMyAgencyBrand, uploadAgencyLogo } from "@/app/actions/my-agency";
+import { applyBrandPreview, clearBrandPreview } from "@/lib/brand-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,20 +46,15 @@ export function BrandingForm({
     return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
   })();
 
-  // Preview en vivo del shell: variables CSS en la raiz mientras se escribe.
+  // Preview en vivo del shell (fix review): lib/brand-preview escribe
+  // --brand-preview(-fg) en documentElement; BrandProvider compone
+  // var(--brand-preview, var(--brand-saved)) asi que el preview gana al
+  // valor guardado EN TODO el shell. Al desmontar se limpia.
   useEffect(() => {
     if (!parsedColor || parsedColor === initialColor.toLowerCase()) return;
 
-    const root = document.documentElement.style;
-    const prevBrand = root.getPropertyValue("--brand");
-    const prevFg = root.getPropertyValue("--brand-fg");
-    root.setProperty("--brand", parsedColor);
-    root.setProperty("--brand-fg", pickBrandForeground(parsedColor));
-
-    return () => {
-      root.setProperty("--brand", prevBrand);
-      root.setProperty("--brand-fg", prevFg);
-    };
+    applyBrandPreview(parsedColor);
+    return () => clearBrandPreview();
   }, [parsedColor, initialColor]);
 
   async function handleSave() {
