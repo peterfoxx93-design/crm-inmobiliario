@@ -16,7 +16,7 @@ import {
   parsePropertyFilters,
   type PropertyFilters,
 } from "@/lib/property-filters";
-import { parseViewParam, type MapView } from "@/lib/map-view";
+import { parseViewParam, viewToSearchParams, type MapView } from "@/lib/map-view";
 import {
   listProperties,
   type PropertyListResult,
@@ -157,7 +157,12 @@ async function PropertiesContent({
         </div>
       )}
 
-      <ListPagination filters={filters} total={result.total} pageCount={result.pageCount} />
+      <ListPagination
+        filters={filters}
+        view={view}
+        total={result.total}
+        pageCount={result.pageCount}
+      />
     </>
   );
 }
@@ -219,17 +224,19 @@ function ViewToggle({ params, view }: ViewToggleProps) {
 
 interface ListPaginationProps {
   filters: PropertyFilters;
+  /** Vista activa: los enlaces deben conservar ?vista=mapa (fix review T11). */
+  view: MapView;
   total: number;
   pageCount: number;
 }
 
-/** Paginacion servidor: enlaces previo/siguiente conservando todos los filtros. */
-function ListPagination({ filters, total, pageCount }: ListPaginationProps) {
+/** Paginacion servidor: enlaces previo/siguiente conservando filtros y vista. */
+function ListPagination({ filters, view, total, pageCount }: ListPaginationProps) {
   const from = (filters.page - 1) * PROPERTY_PAGE_SIZE + 1;
   const to = Math.min(filters.page * PROPERTY_PAGE_SIZE, total);
 
   function hrefFor(page: number): string {
-    const qs = filtersToSearchParams({ ...filters, page }).toString();
+    const qs = viewToSearchParams({ ...filters, page }, view).toString();
     return qs ? `/propiedades?${qs}` : "/propiedades";
   }
 

@@ -13,7 +13,9 @@ interface Coords {
 }
 
 /** true si la propiedad tiene coordenadas utilizables en el mapa. */
-function hasUsableCoords(item: Coords): boolean {
+function hasUsableCoords<T extends Coords>(
+  item: T,
+): item is T & { lat: number; lng: number } {
   return (
     typeof item.lat === "number" &&
     Number.isFinite(item.lat) &&
@@ -24,16 +26,18 @@ function hasUsableCoords(item: Coords): boolean {
 
 /**
  * Separa los resultados entre ubicables y sin ubicación para el mapa
- * y el contador "N sin ubicación".
+ * y el contador "N sin ubicación". El tipo de withCoords garantiza
+ * coordenadas no nulas (invariant del render del mapa).
  */
 export function splitByCoords<T extends Coords>(items: readonly T[]): {
-  withCoords: T[];
+  withCoords: Array<T & { lat: number; lng: number }>;
   withoutCoords: T[];
 } {
-  const withCoords: T[] = [];
+  const withCoords: Array<T & { lat: number; lng: number }> = [];
   const withoutCoords: T[] = [];
   for (const item of items) {
-    (hasUsableCoords(item) ? withCoords : withoutCoords).push(item);
+    if (hasUsableCoords(item)) withCoords.push(item);
+    else withoutCoords.push(item);
   }
   return { withCoords, withoutCoords };
 }

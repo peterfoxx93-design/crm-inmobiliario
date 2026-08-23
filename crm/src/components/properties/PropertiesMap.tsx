@@ -6,7 +6,7 @@
  * porque Leaflet accede a `window` al importarse.
  */
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
@@ -14,6 +14,12 @@ import "leaflet/dist/leaflet.css";
 
 import { formatCurrency } from "@/lib/format";
 import type { PropertyWithImages } from "@/lib/queries/properties";
+
+/** Propiedad ya validada por splitByCoords: coordenadas garantizadas. */
+export type MappableProperty = PropertyWithImages & {
+  lat: number;
+  lng: number;
+};
 
 /** Centro y zoom por defecto (España) cuando no hay resultados ubicables. */
 const FALLBACK_CENTER: [number, number] = [40.4168, -3.7038];
@@ -49,13 +55,17 @@ function FitBounds({ points }: { points: Array<[number, number]> }) {
 }
 
 export interface PropertiesMapProps {
-  properties: PropertyWithImages[];
+  properties: MappableProperty[];
 }
 
 export default function PropertiesMap({ properties }: PropertiesMapProps) {
-  const pin = createPinIcon();
-  const points = properties.map(
-    (p) => [p.lat as number, p.lng as number] as [number, number],
+  const pin = useMemo(() => createPinIcon(), []);
+  const points = useMemo(
+    () =>
+      properties.map(
+        (p) => [p.lat, p.lng] as [number, number],
+      ),
+    [properties],
   );
 
   return (
@@ -76,7 +86,7 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
           return (
             <Marker
               key={property.id}
-              position={[property.lat as number, property.lng as number]}
+              position={[property.lat, property.lng]}
               icon={pin}
             >
               <Popup>
