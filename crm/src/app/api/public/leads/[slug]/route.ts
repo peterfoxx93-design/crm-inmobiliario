@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { createAdminSupabase } from "@/lib/admin-users";
 import { sendLeadNotification } from "@/lib/email";
+import { readBodyCapped } from "@/lib/request-body";
 import {
   DEFAULT_LEAD_RATE_LIMIT,
   createSlidingWindowLimiter,
@@ -72,15 +73,20 @@ export async function POST(
     );
   }
 
-  // 2) Cota de tamano + parseo JSON defensivo (cuerpo anonimo).
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+  // 2) Lectura del cuerpo con COTA DURA de bytes (review B2): se consume el
+  //    stream por chunks y se corta al superar MAX_BODY_BYTES. No se confia
+  //    en content-length (mintible) ni en request.json() (bufferiza todo).
+  const capped = await readBodyCapped(request.body, MAX_BODY_BYTES);
+  if (capped.kind === "too_large") {
     return jsonResponse({ ok: false, error: "Solicitud demasiado grande." }, 400);
+  }
+  if (capped.kind !== "text") {
+    return jsonResponse({ ok: false, error: "Solicitud no válida." }, 400);
   }
 
   let rawBody: unknown;
   try {
-    rawBody = await request.json();
+    rawBody = JSON.parse(capped.text);
   } catch {
     return jsonResponse({ ok: false, error: "Solicitud no válida." }, 400);
   }
@@ -137,11 +143,17 @@ export async function POST(
   }
 
   // 6) Upsert por telefono dentro de la agencia (decision pura testeada).
+  //    .limit(1) con orden determinista (review R2): si hubiera duplicados
+  //    del mismo telefono, maybeSingle() a secas daria error -> null ->
+  //    insertaria OTRO duplicado. Con limit(1) se anade la actividad al
+  //    contacto mas antiguo y nunca se multiplica la fila.
   const existing = await admin
     .from("contacts")
     .select("id")
     .eq("agency_id", agency.id as string)
     .eq("phone", lead.phone)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   const decision = decideLeadUpsert(

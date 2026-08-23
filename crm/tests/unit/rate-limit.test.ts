@@ -89,16 +89,19 @@ describe("createSlidingWindowLimiter", () => {
 });
 
 describe("extractClientIp", () => {
-  it("extrae la primera IP de x-forwarded-for", () => {
+  it("extrae la IP mas a la DERECHA de x-forwarded-for (la que anade el proxy propio; la izquierda es spoofable por el cliente)", () => {
     const get = (name: string) =>
       name === "x-forwarded-for" ? "203.0.113.7, 70.41.3.18" : null;
-    expect(extractClientIp(get)).toBe("203.0.113.7");
+    expect(extractClientIp(get)).toBe("70.41.3.18");
   });
 
   it("recorta espacios alrededor de la IP", () => {
     const get = (name: string) =>
       name === "x-forwarded-for" ? "  198.51.100.2 " : null;
     expect(extractClientIp(get)).toBe("198.51.100.2");
+    const multi = (name: string) =>
+      name === "x-forwarded-for" ? "10.0.0.1 , 192.0.2.50" : null;
+    expect(extractClientIp(multi)).toBe("192.0.2.50");
   });
 
   it("usa x-real-ip como fallback", () => {
@@ -110,5 +113,64 @@ describe("extractClientIp", () => {
   it("devuelve un valor neutro si no hay cabeceras de proxy", () => {
     expect(extractClientIp(() => null)).toBe("");
     expect(extractClientIp((name) => (name === "x-forwarded-for" ? "" : null))).toBe("");
+  });
+});
+
+describe("eviction del mapa de marcas", () => {
+  const baseOptions = { limit: 1, windowMs: 1_000 };
+
+  it("al superar el cap barre caducadas y, si falta sitio, expulsa la menos recientemente activa", () => {
+    let now = 0;
+    const limiter = createSlidingWindowLimiter({
+      ...baseOptions,
+      now: () => now,
+      evictionCap: 3,
+    });
+
+    // t=0: tres claves vivas.
+    limiter.check("a");
+    limiter.check("b");
+    limiter.check("c");
+    expect(limiter.size()).toBe(3);
+
+    // t=500: cap lleno con claves vivas -> sacrifica la menos reciente (a)
+    // para dar entrada a d; b y c siguen vivas.
+    now += 500;
+    limiter.check("d");
+    expect(limiter.size()).toBe(3);
+
+    // t=1100: b y c han caducado (marca 0 <= ventana desde 100); d vive.
+    now += 600;
+    limiter.check("e");
+    expect(limiter.size()).toBe(2);
+  });
+
+  it("no toca nada mientras el mapa no supere el cap (coste cero en frio)", () => {
+    let now = 0;
+    const limiter = createSlidingWindowLimiter({
+      ...baseOptions,
+      now: () => now,
+      evictionCap: 100,
+    });
+
+    limiter.check("a"); // caduca enseguida
+    now += 10_000;
+    limiter.check("b"); // sin cap alcanzado: la clave muerta espera al proximo barrido
+    expect(limiter.size()).toBe(2);
+  });
+
+  it("acota el crecimiento ante IPs infinitas: nunca retiene mas que el cap", () => {
+    const now = 0;
+    const limiter = createSlidingWindowLimiter({
+      limit: 1,
+      windowMs: 60_000,
+      now: () => now,
+      evictionCap: 5,
+    });
+
+    for (let i = 0; i < 200; i += 1) {
+      limiter.check(`ip-${i}`); // cada IP distinta, todas vivas en la ventana
+    }
+    expect(limiter.size()).toBe(5);
   });
 });
