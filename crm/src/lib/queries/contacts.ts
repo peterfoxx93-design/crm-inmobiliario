@@ -146,3 +146,19 @@ export async function listAgencyAgents(): Promise<AssignedAgent[]> {
   if (error) return [];
   return (data ?? []) as AssignedAgent[];
 }
+
+/** Opciones ligeras para el combobox de contactos del dialogo de tareas. */
+export async function listContactOptions(): Promise<
+  Array<{ id: string; full_name: string }>
+> {
+  const supabase = await createServerSupabase();
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("id, full_name")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) return [];
+  return (data ?? []) as Array<{ id: string; full_name: string }>;
+}

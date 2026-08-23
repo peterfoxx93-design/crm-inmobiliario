@@ -225,10 +225,15 @@ const addActivitySchema = z.object({
   contactId: z.string().uuid().optional(),
   propertyId: z.string().uuid().optional(),
   dealId: z.string().uuid().optional(),
-  /** ISO date (YYYY-MM-DD) para tareas; se guarda a medianoche UTC. */
+  /** Fecha `YYYY-MM-DD` (composer, a medianoche) o instante ISO completo
+   * (TaskDialog de la Agenda, Task 14); timestamptz acepta ambos. */
   dueDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha no es válida.")
+    .refine(
+      (value) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isNaN(Date.parse(value)),
+      "La fecha no es válida.",
+    )
     .optional(),
 });
 
@@ -273,6 +278,8 @@ export async function addActivity(
     revalidatePath("/contactos");
     if (data.propertyId) revalidatePath(`/propiedades/${data.propertyId}`);
     if (data.dealId) revalidatePath("/pipeline");
+    // Las tareas viven en la Agenda (Task 14).
+    if (data.type === "tarea") revalidatePath("/agenda");
     return { id: created.id as string };
   });
 }

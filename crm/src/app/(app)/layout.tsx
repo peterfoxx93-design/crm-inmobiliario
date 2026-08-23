@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandProvider } from "@/components/theme/BrandProvider";
+import { Toaster } from "@/components/ui/sonner";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Agency, Profile } from "@/lib/types";
 
@@ -46,6 +47,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <BrandProvider color={agency?.primary_color ?? null}>
+      {/* Montaje global de sonner: sin esto ningun toast() de la app se ve. */}
+      <Toaster richColors position="top-right" />
       <AppShell
         user={{
           fullName: profile.full_name,
