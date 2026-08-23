@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -47,10 +47,11 @@ export function ConfirmDialog({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Al reabrir el dialogo se limpia el error de un intento anterior.
-  useEffect(() => {
-    if (open) setError(null);
-  }, [open]);
+  // Al abrir/cerrar se limpia el error de un intento anterior (sin efectos).
+  function handleOpenChange(nextOpen: boolean) {
+    setError(null);
+    onOpenChange(nextOpen);
+  }
 
   async function handleConfirm() {
     try {
@@ -68,7 +69,7 @@ export function ConfirmDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
