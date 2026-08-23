@@ -31,10 +31,28 @@ describe("parseAgendaView", () => {
     expect(parseAgendaView({ dia: "2026-8-1" }).dia).toBeNull();
   });
 
+  it("rechaza dias con formato valido pero fecha de calendario inexistente", () => {
+    // Regresion Task 19: pasaban el regex y luego rompian la pagina con
+    // RangeError al construir new Date() sobre claves imposibles.
+    expect(parseAgendaView({ dia: "2026-02-30" }).dia).toBeNull();
+    expect(parseAgendaView({ dia: "2026-13-01" }).dia).toBeNull();
+    expect(parseAgendaView({ dia: "2026-04-31" }).dia).toBeNull();
+    expect(parseAgendaView({ dia: "2026-02-29" }).dia).toBeNull(); // no bisiesto
+  });
+
+  it("acepta dias reales del calendario, incluido bisiesto", () => {
+    expect(parseAgendaView({ dia: "2028-02-29" }).dia).toBe("2028-02-29");
+    expect(parseAgendaView({ dia: "2024-12-31" }).dia).toBe("2024-12-31");
+  });
+
   it("valida mes con formato YYYY-MM y rechaza el resto", () => {
     expect(parseAgendaView({ mes: "2026-08" }).mes).toBe("2026-08");
     expect(parseAgendaView({ mes: "agosto" }).mes).toBeNull();
-    expect(parseAgendaView({ mes: "2026-13" }).mes).toBe("2026-13");
+    // Regresion Task 19: el mes 13 pasaba el regex y provocaba RangeError
+    // en la cabecera de /agenda al formatear new Date("2026-13-01T...").
+    expect(parseAgendaView({ mes: "2026-13" }).mes).toBeNull();
+    expect(parseAgendaView({ mes: "2026-00" }).mes).toBeNull();
+    expect(parseAgendaView({ mes: "2025-12" }).mes).toBe("2025-12");
   });
 });
 
