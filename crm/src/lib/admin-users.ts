@@ -2,7 +2,8 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import type { ProfileRole } from "@/lib/types";
+import type { Agency, ProfileRole } from "@/lib/types";
+import { isAdminRole, memberManagementError } from "@/lib/settings-access";
 import { getUser, createServerSupabase } from "@/lib/supabase/server";
 import { inviteSchema, type InviteUserInput } from "@/lib/validators/user";
 
@@ -47,13 +48,22 @@ function createAdminSupabase() {
 }
 
 /**
- * Resuelve la agencia destino del invitado a partir del perfil del llamador.
- * Lanza error en español si no está autenticado, sin agencia o sin permiso.
+ * Resuelve el actor de Ajustes (Task 16): sesion valida + rol admin +
+ * agencia efectiva (`active_agency_id ?? agency_id`, impersonacion incluida).
+ * `accion` se interpola en los mensajes para dar contexto en espanol.
  */
-async function resolveInvokerAgency(): Promise<string> {
+export interface SettingsActor {
+  userId: string;
+  role: ProfileRole;
+  agencyId: string;
+}
+
+export async function resolveSettingsActor(
+  accion = "realizar esta acción",
+): Promise<SettingsActor> {
   const user = await getUser();
   if (!user) {
-    throw new Error("Debes iniciar sesión para invitar usuarios.");
+    throw new Error(`Debes iniciar sesión para ${accion}.`);
   }
 
   const supabase = await createServerSupabase();
@@ -68,17 +78,26 @@ async function resolveInvokerAgency(): Promise<string> {
   }
 
   const role = profile.role as ProfileRole;
-  if (role !== "admin" && role !== "super_admin") {
-    throw new Error("Solo un administrador puede invitar usuarios.");
+  if (!isAdminRole(role)) {
+    throw new Error(`Solo un administrador puede ${accion}.`);
   }
 
   // Igual que get_my_agency_id(): la impersonación manda sobre la agencia propia.
   const agencyId = profile.active_agency_id ?? profile.agency_id;
   if (!agencyId) {
-    throw new Error("No tienes ninguna agencia activa para invitar usuarios.");
+    throw new Error(`No tienes ninguna agencia activa para ${accion}.`);
   }
 
-  return agencyId;
+  return { userId: user.id, role, agencyId };
+}
+
+/**
+ * Resuelve la agencia destino del invitado a partir del perfil del llamador.
+ * Lanza error en español si no está autenticado, sin agencia o sin permiso.
+ */
+async function resolveInvokerAgency(): Promise<string> {
+  const actor = await resolveSettingsActor("invitar usuarios");
+  return actor.agencyId;
 }
 
 /** Envuelve un error de Auth Admin en un mensaje útil en español. */
@@ -128,5 +147,161 @@ export async function inviteUser(input: InviteUserInput): Promise<void> {
       "El usuario se creó, pero no se pudo generar el enlace de invitación.",
       linkError,
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gestion de miembros y branding de la propia agencia (Task 16).
+// Mismo patron: guard de rol en servidor con el cliente SSR (RLS) y SOLO
+// despues se usa service_role para lo que RLS no cubre (Auth Admin y el
+// update de `agencies`, cuya policy solo deja escribir al super_admin).
+// ---------------------------------------------------------------------------
+
+/** Fila de usuario lista para la tabla de Ajustes (serializable). */
+export interface AgencyUserRow {
+  id: string;
+  fullName: string;
+  /** Email desde Auth Admin (`profiles` no guarda email). "" si falta. */
+  email: string;
+  role: ProfileRole;
+  avatarUrl: string | null;
+  /** false = acceso desactivado (usuario baneado en Auth). */
+  active: boolean;
+}
+
+/**
+ * Duracion del ban para "desactivar acceso": ~100 anos (GoTrue acepta una
+ * duracion tipo `168h`; no hay ban permanente como tal).
+ */
+const DEACTIVATE_BAN_DURATION = "876000h";
+
+/** Lista los perfiles de la agencia efectiva del actor + email/estado de Auth. */
+export async function listAgencyUsers(): Promise<AgencyUserRow[]> {
+  const actor = await resolveSettingsActor("gestionar usuarios");
+  const supabase = await createServerSupabase();
+
+  // Lectura por RLS: profiles_select_own_or_agency ya filtra a la agencia.
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, role, avatar_url")
+    .eq("agency_id", actor.agencyId)
+    .order("full_name", { ascending: true });
+
+  if (error || !profiles) {
+    throw new Error("No se ha podido cargar la lista de usuarios.");
+  }
+
+  // Emails y estado de ban: unicamente via Auth Admin (service_role),
+  // tras haber validado rol/agencia del llamador.
+  const admin = createAdminSupabase();
+  const authUsers = [];
+  for (let page = 1; ; page += 1) {
+    const { data, error: listError } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (listError || !data) {
+      throw new Error("No se ha podido cargar la lista de usuarios.");
+    }
+    authUsers.push(...data.users);
+    if (data.users.length < 200) break;
+  }
+
+  const byId = new Map(authUsers.map((u) => [u.id, u]));
+  const now = Date.now();
+
+  return profiles.flatMap((p) => {
+    const role = p.role as ProfileRole;
+    // Un super_admin nunca se gestiona desde Ajustes (ni siquiera se lista).
+    if (role === "super_admin") return [];
+
+    const authUser = byId.get(p.id);
+    const bannedUntil = authUser?.banned_until
+      ? Date.parse(authUser.banned_until)
+      : null;
+    const active =
+      bannedUntil === null || Number.isNaN(bannedUntil) || bannedUntil <= now;
+
+    return [
+      {
+        id: p.id,
+        fullName: p.full_name,
+        email: authUser?.email ?? "",
+        role,
+        avatarUrl: p.avatar_url ?? null,
+        active,
+      },
+    ];
+  });
+}
+
+/**
+ * Activa o desactiva el ACCESO de un miembro (ban en Auth Admin). El perfil
+ * no se toca: al reactivar, el usuario vuelve tal cual. Guard puro de
+ * lib/settings-access.ts aplicado antes de tocar service_role:
+ * jamas self-ban, jamas sobre super_admin, jamas fuera de la agencia.
+ */
+export async function setUserActive(
+  targetId: string,
+  active: boolean,
+): Promise<void> {
+  const accion = active ? "reactivar usuarios" : "desactivar usuarios";
+  const actor = await resolveSettingsActor(accion);
+  const supabase = await createServerSupabase();
+
+  const { data: target } = await supabase
+    .from("profiles")
+    .select("id, role, agency_id")
+    .eq("id", targetId)
+    .maybeSingle();
+
+  if (!target) {
+    throw new Error("Usuario no encontrado.");
+  }
+
+  const guardError = memberManagementError(
+    { userId: actor.userId, role: actor.role, agencyId: actor.agencyId },
+    {
+      id: target.id,
+      role: target.role as ProfileRole,
+      agencyId: target.agency_id,
+    },
+  );
+  if (guardError) throw new Error(guardError);
+
+  const admin = createAdminSupabase();
+  const { error } = await admin.auth.admin.updateUserById(targetId, {
+    ban_duration: active ? "none" : DEACTIVATE_BAN_DURATION,
+  });
+
+  if (error) {
+    throw mapAuthError(
+      active
+        ? "No se ha podido reactivar el acceso."
+        : "No se ha podido desactivar el acceso.",
+      error,
+    );
+  }
+}
+
+/**
+ * Update del branding en `agencies` con service_role. La RLS solo permite
+ * escribir agencies al super_admin; aqui el guard de rol (resolveSettingsActor)
+ * ya autorizo al admin de ESA agencia en servidor, igual que inviteUser.
+ */
+export async function updateAgencyBrandingRow(
+  agencyId: string,
+  patch: Partial<Pick<Agency, "name" | "logo_url" | "primary_color">>,
+): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+
+  const admin = createAdminSupabase();
+  const { error } = await admin
+    .from("agencies")
+    .update(patch)
+    .eq("id", agencyId);
+
+  if (error) {
+    throw new Error("No se han podido guardar los cambios de la agencia.");
   }
 }
