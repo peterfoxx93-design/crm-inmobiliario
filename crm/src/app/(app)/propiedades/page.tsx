@@ -1,10 +1,11 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertTriangle, HousePlus, Plus } from "lucide-react";
+import { AlertTriangle, HousePlus, LayoutList, Map, Plus } from "lucide-react";
 
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyFiltersBar } from "@/components/properties/PropertyFilters";
+import { PropertiesMapPanel } from "@/components/properties/PropertiesMapPanel";
 import { CardGridSkeleton } from "@/components/shared/Skeletons";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   parsePropertyFilters,
   type PropertyFilters,
 } from "@/lib/property-filters";
+import { parseViewParam, type MapView } from "@/lib/map-view";
 import {
   listProperties,
   type PropertyListResult,
@@ -45,6 +47,7 @@ export default async function Page({ searchParams }: PageProps) {
     if (first !== undefined) keyParams.set(key, first);
   }
   const suspenseKey = keyParams.toString();
+  const view = parseViewParam(params);
 
   return (
     <div className="space-y-4">
@@ -55,14 +58,17 @@ export default async function Page({ searchParams }: PageProps) {
             Cartera de inmuebles de la agencia con filtros y búsqueda.
           </p>
         </div>
-        <Button render={<Link href="/propiedades/nuevo" />}>
-          <Plus data-icon="inline-start" aria-hidden />
-          Nueva propiedad
-        </Button>
+        <div className="flex items-center gap-2">
+          <ViewToggle params={params} view={view} />
+          <Button render={<Link href="/propiedades/nuevo" />}>
+            <Plus data-icon="inline-start" aria-hidden />
+            Nueva propiedad
+          </Button>
+        </div>
       </div>
 
       <Suspense key={suspenseKey} fallback={<CardGridSkeleton />}>
-        <PropertiesContent params={params} />
+        <PropertiesContent params={params} view={view} />
       </Suspense>
     </div>
   );
@@ -70,8 +76,10 @@ export default async function Page({ searchParams }: PageProps) {
 
 async function PropertiesContent({
   params,
+  view,
 }: {
   params: Record<string, string | string[] | undefined>;
+  view: MapView;
 }) {
   const filters = parsePropertyFilters(params);
 
@@ -139,14 +147,73 @@ async function PropertiesContent({
         {result.total} {result.total === 1 ? "propiedad" : "propiedades"}
       </p>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {result.properties.map((property) => (
-          <PropertyCard key={property.id} property={property} />
-        ))}
-      </div>
+      {view === "mapa" ? (
+        <PropertiesMapPanel properties={result.properties} />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {result.properties.map((property) => (
+            <PropertyCard key={property.id} property={property} />
+          ))}
+        </div>
+      )}
 
       <ListPagination filters={filters} total={result.total} pageCount={result.pageCount} />
     </>
+  );
+}
+
+interface ViewToggleProps {
+  params: Record<string, string | string[] | undefined>;
+  view: MapView;
+}
+
+/**
+ * Toggle Lista|Mapa (Task 11): enlaces que conservan TODOS los searchParams
+ * actuales y solo intercambian `vista`, para compartir la URL con filtros.
+ */
+function ViewToggle({ params, view }: ViewToggleProps) {
+  function hrefFor(target: MapView): string {
+    const sp = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      const first = Array.isArray(value) ? value[0] : value;
+      if (first !== undefined && key !== "vista") sp.set(key, first);
+    }
+    if (target === "mapa") sp.set("vista", "mapa");
+    const qs = sp.toString();
+    return qs ? `/propiedades?${qs}` : "/propiedades";
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Vista de propiedades"
+      className="flex overflow-hidden rounded-md border"
+    >
+      <Link
+        href={hrefFor("lista")}
+        aria-current={view === "lista" ? "page" : undefined}
+        className={`flex items-center gap-1.5 px-3 py-2 text-sm ${
+          view === "lista"
+            ? "bg-primary text-primary-foreground"
+            : "bg-background hover:bg-muted"
+        }`}
+      >
+        <LayoutList aria-hidden className="size-4" />
+        Lista
+      </Link>
+      <Link
+        href={hrefFor("mapa")}
+        aria-current={view === "mapa" ? "page" : undefined}
+        className={`flex items-center gap-1.5 px-3 py-2 text-sm ${
+          view === "mapa"
+            ? "bg-primary text-primary-foreground"
+            : "bg-background hover:bg-muted"
+        }`}
+      >
+        <Map aria-hidden className="size-4" />
+        Mapa
+      </Link>
+    </div>
   );
 }
 
