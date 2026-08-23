@@ -5,6 +5,12 @@ import { z } from "zod";
 
 import { createServerSupabase, getUser } from "@/lib/supabase/server";
 import type { DealStage } from "@/lib/types";
+import {
+  closeDealSchema,
+  dealIdSchema,
+  dealStageSchema,
+  updateDealSchema,
+} from "@/lib/validators/deal";
 
 /**
  * Server actions de ofertas (Task 13). Mismo contrato que actions/contacts:
@@ -14,13 +20,6 @@ import type { DealStage } from "@/lib/types";
  */
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
-
-const idSchema = z.string().uuid("Identificador no válido.");
-
-const stageSchema = z.enum(
-  ["nuevo_lead", "calificado", "visita", "negociacion", "cierre"],
-  { errorMap: () => ({ message: "Etapa del pipeline no válida." }) },
-);
 
 class ActionError extends Error {}
 
@@ -88,31 +87,6 @@ async function requireDeal(
   if (!data) throw new ActionError("Oferta no encontrada.");
 }
 
-const updateDealSchema = z.object({
-  notes: z
-    .string()
-    .trim()
-    .max(4000, "Las notas no pueden superar 4000 caracteres.")
-    .optional(),
-  // "" o explicito null limpia el importe (columna nullable en el DDL).
-  value: z.preprocess(
-    (v) => (v === "" ? null : v),
-    z
-      .union(
-        [
-          z
-            .number({ invalid_type_error: "El importe debe ser un número." })
-            .positive("El importe debe ser mayor que cero."),
-          z.null(),
-        ],
-        { invalid_type_error: "El importe debe ser un número." },
-      )
-      .optional(),
-  ),
-});
-
-export type UpdateDealInput = z.infer<typeof updateDealSchema>;
-
 /**
  * Mueve un deal a otra etapa del pipeline y reinicia su contador SLA
  * (stage_updated_at = ahora).
@@ -122,8 +96,8 @@ export async function moveDeal(
   stage: string,
 ): Promise<ActionResult<{ id: string; stage: DealStage }>> {
   return runAction(async () => {
-    const dealId = idSchema.parse(id);
-    const nextStage = stageSchema.parse(stage);
+    const dealId = dealIdSchema.parse(id);
+    const nextStage = dealStageSchema.parse(stage);
     const { agencyId } = await resolveActor();
     const supabase = await createServerSupabase();
     await requireDeal(supabase, dealId, agencyId);
@@ -150,7 +124,7 @@ export async function updateDeal(
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   return runAction(async () => {
-    const dealId = idSchema.parse(id);
+    const dealId = dealIdSchema.parse(id);
     const data = updateDealSchema.parse(input);
     const { agencyId } = await resolveActor();
     const supabase = await createServerSupabase();
@@ -173,18 +147,6 @@ export async function updateDeal(
   });
 }
 
-const closeDealSchema = z.object({
-  won: z.boolean({
-    required_error: "Indica si la oferta se ha ganado o perdido.",
-  }),
-  lostReason: z
-    .string()
-    .trim()
-    .min(1, "Indica el motivo de la pérdida.")
-    .max(500, "El motivo no puede superar 500 caracteres.")
-    .optional(),
-});
-
 /**
  * Cierra un deal como ganado o perdido. El estado de la propiedad NO se
  * toca aqui: la sugerencia de marcarla vendida vive en la UI del drawer
@@ -196,7 +158,7 @@ export async function closeDeal(
   lostReason?: string,
 ): Promise<ActionResult<{ id: string; won: boolean }>> {
   return runAction(async () => {
-    const dealId = idSchema.parse(id);
+    const dealId = dealIdSchema.parse(id);
     const data = closeDealSchema.parse({ won, lostReason });
     if (!data.won && !data.lostReason) {
       throw new ActionError("Indica el motivo de la pérdida.");

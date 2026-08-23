@@ -80,9 +80,13 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
     setSelectedId(dealId);
   }
 
-  function clearPending(dealId: string) {
+  function clearPending(dealId: string, expectedAt?: string) {
     setPendingMoves((prev) => {
-      if (!prev.has(dealId)) return prev;
+      const current = prev.get(dealId);
+      if (!current) return prev;
+      // Con expectedAt solo se limpia SI la entrada sigue siendo la nuestra
+      // (evita borrar el override de un move posterior sobre el mismo deal).
+      if (expectedAt !== undefined && current.at !== expectedAt) return prev;
       const next = new Map(prev);
       next.delete(dealId);
       return next;
@@ -90,16 +94,15 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
   }
 
   async function persistMove(dealId: string, nextStage: DealStage) {
-    setPendingMoves((prev) =>
-      new Map(prev).set(dealId, { stage: nextStage, at: new Date().toISOString() }),
-    );
+    const at = new Date().toISOString();
+    setPendingMoves((prev) => new Map(prev).set(dealId, { stage: nextStage, at }));
 
     const result = await moveDeal(dealId, nextStage);
     if (!result.ok) {
       // Rollback implicito: al limpiar el override la card vuelve a la etapa
       // real que traen las props del servidor.
       toast.error(result.error);
-      clearPending(dealId);
+      clearPending(dealId, at);
       return;
     }
     toast.success("Oferta movida.");
