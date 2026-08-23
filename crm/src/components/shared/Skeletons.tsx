@@ -27,6 +27,28 @@ export function CardSkeleton({ className }: CardSkeletonProps) {
   );
 }
 
+interface CardGridSkeletonProps {
+  /** Numero de tarjetas simuladas (por defecto 6). */
+  count?: number;
+  className?: string;
+}
+
+/** Grid responsive de tarjetas (listado de propiedades, 1/2/3 columnas). */
+export function CardGridSkeleton({ count = 6, className }: CardGridSkeletonProps) {
+  const safeCount = Math.max(1, count);
+
+  return (
+    <div
+      data-slot="card-grid-skeleton"
+      className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3", className)}
+    >
+      {Array.from({ length: safeCount }, (_, i) => (
+        <CardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
 interface TableSkeletonProps {
   rows?: number;
   columns?: number;
