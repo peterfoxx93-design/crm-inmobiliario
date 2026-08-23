@@ -24,7 +24,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { moveDeal } from "@/app/actions/deals";
@@ -48,11 +48,26 @@ const CLICK_GUARD_MS = 250;
 export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
   const router = useRouter();
 
-  // Estado local optimista; el rollback restaura el snapshot previo al cambio.
-  const [items, setItems] = useState<DealWithRelations[]>(deals);
+  // Estado optimista DERIVADO de las props del servidor: solo se guardan los
+  // movimientos en vuelo (deal -> etapa). Al llegar props frescas tras
+  // router.refresh() la card cerrada desaparece sola y un override cuya etapa
+  // ya coincide con el servidor se vuelve un no-op (sin carreras ni snapshots).
+  const [pendingMoves, setPendingMoves] = useState<
+    Map<string, { stage: DealStage; at: string }>
+  >(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const dragGuardUntil = useRef(0);
+
+  const items = useMemo<DealWithRelations[]>(
+    () =>
+      deals.map((deal) => {
+        const pending = pendingMoves.get(deal.id);
+        if (!pending || pending.stage === deal.stage) return deal;
+        return { ...deal, stage: pending.stage, stage_updated_at: pending.at };
+      }),
+    [deals, pendingMoves],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -65,24 +80,31 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
     setSelectedId(dealId);
   }
 
+  function clearPending(dealId: string) {
+    setPendingMoves((prev) => {
+      if (!prev.has(dealId)) return prev;
+      const next = new Map(prev);
+      next.delete(dealId);
+      return next;
+    });
+  }
+
   async function persistMove(dealId: string, nextStage: DealStage) {
-    const snapshot = items;
-    // Optimista: nueva etapa + reinicio del contador SLA.
-    setItems((prev) =>
-      prev.map((deal) =>
-        deal.id === dealId
-          ? { ...deal, stage: nextStage, stage_updated_at: new Date().toISOString() }
-          : deal,
-      ),
+    setPendingMoves((prev) =>
+      new Map(prev).set(dealId, { stage: nextStage, at: new Date().toISOString() }),
     );
 
     const result = await moveDeal(dealId, nextStage);
     if (!result.ok) {
+      // Rollback implicito: al limpiar el override la card vuelve a la etapa
+      // real que traen las props del servidor.
       toast.error(result.error);
-      setItems(snapshot); // rollback al estado real previo
+      clearPending(dealId);
       return;
     }
     toast.success("Oferta movida.");
+    // En exito el override se conserva: se vuelve no-op cuando las props
+    // refrescadas ya reflejan la nueva etapa (sin parpadeo intermedio).
     startTransition(() => router.refresh());
   }
 

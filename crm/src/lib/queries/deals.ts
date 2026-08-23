@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase, getUser } from "@/lib/supabase/server";
 import type { AgencySettings, DealStage } from "@/lib/types";
 import type { DealWithRelations } from "@/lib/pipeline";
 
@@ -62,9 +62,8 @@ export async function getAgencyPipelineDays(): Promise<
 > {
   const supabase = await createServerSupabase();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Mismo helper getUser() que las actions (consistencia de sesion).
+  const user = await getUser();
   if (!user) return {};
 
   const { data: profile } = await supabase

@@ -8,7 +8,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { TriangleAlert } from "lucide-react";
 
 import { closeDeal, updateDeal } from "@/app/actions/deals";
@@ -179,6 +180,7 @@ function DealDrawerBody({
   async function handleSave() {
     setIsSaving(true);
     try {
+      // Importe vacio = limpiar el valor (columna nullable del DDL).
       const result = await updateDeal(deal.id, { notes, value });
       if (!result.ok) {
         toast.error(result.error);

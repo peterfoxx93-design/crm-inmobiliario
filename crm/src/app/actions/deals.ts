@@ -94,11 +94,19 @@ const updateDealSchema = z.object({
     .trim()
     .max(4000, "Las notas no pueden superar 4000 caracteres.")
     .optional(),
+  // "" o explicito null limpia el importe (columna nullable en el DDL).
   value: z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    (v) => (v === "" ? null : v),
     z
-      .number({ invalid_type_error: "El importe debe ser un número." })
-      .positive("El importe debe ser mayor que cero.")
+      .union(
+        [
+          z
+            .number({ invalid_type_error: "El importe debe ser un número." })
+            .positive("El importe debe ser mayor que cero."),
+          z.null(),
+        ],
+        { invalid_type_error: "El importe debe ser un número." },
+      )
       .optional(),
   ),
 });
@@ -196,14 +204,7 @@ export async function closeDeal(
 
     const { userId, agencyId } = await resolveActor();
     const supabase = await createServerSupabase();
-
-    const { data: existing } = await supabase
-      .from("deals")
-      .select("id")
-      .eq("id", dealId)
-      .eq("agency_id", agencyId)
-      .maybeSingle();
-    if (!existing) throw new ActionError("Oferta no encontrada.");
+    await requireDeal(supabase, dealId, agencyId);
 
     const { error } = await supabase
       .from("deals")
