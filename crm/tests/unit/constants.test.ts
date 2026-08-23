@@ -4,6 +4,7 @@ import {
   ACTIVITY_TYPE_META,
   CONTACT_STATUS_META,
   DEAL_STAGES,
+  DEAL_STAGE_META,
   FEATURES_LIST,
   OPERATION_LABELS,
   PROPERTY_STATUS_META,
@@ -91,6 +92,22 @@ describe("CONTACT_STATUS_META", () => {
     expect(CONTACT_STATUS_META.calificado.label).toBe("Calificado");
     expect(CONTACT_STATUS_META.descartado.label).toBe("Descartado");
     expect(CONTACT_STATUS_META.cerrado.label).toBe("Cerrado");
+  });
+});
+
+describe("DEAL_STAGE_META", () => {
+  it("cubre las 5 etapas del pipeline con label y color", () => {
+    for (const stage of DEAL_STAGES) {
+      expect(DEAL_STAGE_META[stage.id].label).toBe(stage.label);
+      expect(DEAL_STAGE_META[stage.id].color.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("usa la paleta operativa (azul/verde/ambar/naranja)", () => {
+    expect(DEAL_STAGE_META.nuevo_lead.color).toContain("blue");
+    expect(DEAL_STAGE_META.calificado.color).toContain("green");
+    expect(DEAL_STAGE_META.visita.color).toContain("amber");
+    expect(DEAL_STAGE_META.negociacion.color).toContain("orange");
   });
 });
 

@@ -1,6 +1,6 @@
 ﻿import type { Metadata } from "next";
 
-import { EmptyState } from "@/components/layout/EmptyState";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export const metadata: Metadata = {
   title: "Agenda · CRM Inmobiliario",

@@ -43,6 +43,19 @@ export const CONTACT_STATUS_META: Record<ContactStatus, StatusMeta> = {
   cerrado: { label: "Cerrado", color: "bg-green-50 text-green-700" },
 };
 
+/**
+ * Meta de etapas del pipeline para StatusBadge.
+ * Colores segun convencion existente: azul=nuevo, verde=calificado/cierre,
+ * ambar=visita (pendiente), naranja=negociacion en curso.
+ */
+export const DEAL_STAGE_META: Record<DealStage, StatusMeta> = {
+  nuevo_lead: { label: "Nuevo lead", color: "bg-blue-100 text-blue-800" },
+  calificado: { label: "Calificado", color: "bg-green-100 text-green-800" },
+  visita: { label: "Visita", color: "bg-amber-100 text-amber-800" },
+  negociacion: { label: "Negociación", color: "bg-orange-100 text-orange-800" },
+  cierre: { label: "Cierre", color: "bg-green-50 text-green-700" },
+};
+
 export const OPERATION_LABELS: Record<OperationType, string> = {
   venta: "Venta",
   alquiler: "Alquiler",
