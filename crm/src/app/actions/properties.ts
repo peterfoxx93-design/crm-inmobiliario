@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { buildReference, parseReferenceSeq } from "@/lib/format";
-import { computePositions } from "@/lib/gallery";
+import { buildReorderWrites } from "@/lib/gallery";
 import {
   sanitizeFileName,
   storagePathFromPublicUrl,
@@ -312,6 +312,9 @@ export async function markPropertyDealsWon(
       .from("deals")
       .update({ won: true, stage: "cierre" })
       .eq("property_id", id)
+      // Defensa en profundidad, igual que el resto del modulo (RLS ya
+      // cubre el caso; esto acota la escritura aunque RLS cambie).
+      .eq("agency_id", actor.agencyId)
       .select("id");
 
     if (error) {
@@ -443,7 +446,11 @@ export async function deleteImage(
   });
 }
 
-/** Persiste el nuevo orden de la galeria calculado con computePositions. */
+/**
+ * Persiste el nuevo orden de la galeria. Valida que el payload cubra
+ * exactamente las imagenes existentes (I2) y escribe en dos fases
+ * (C1, buildReorderWrites) para no violar unique(property_id, position).
+ */
 export async function reorderImages(
   propertyId: string,
   ids: string[],
@@ -456,8 +463,25 @@ export async function reorderImages(
 
     await requireProperty(supabase, id, actor.agencyId);
 
-    // Secuencial (listas pequenas): evita carreras de escritura simultaneas.
-    for (const update of computePositions(orderedIds)) {
+    // I2: el payload debe cubrir EXACTAMENTE las imagenes existentes de la
+    // propiedad (mismo tamano y mismos ids); ni ids ajenos ni omitidos.
+    const { data: existingImages } = await supabase
+      .from("property_images")
+      .select("id")
+      .eq("property_id", id);
+    const existingIds = new Set((existingImages ?? []).map((row) => String(row.id)));
+    const coversExactly =
+      existingIds.size === orderedIds.length &&
+      orderedIds.every((imageId) => existingIds.has(imageId));
+    if (!coversExactly) {
+      throw new ActionError("Lista de imágenes inválida.");
+    }
+
+    // C1: escritura en DOS fases (buildReorderWrites). Secuencial con las
+    // posiciones finales violaria unique(property_id, position) porque la
+    // galeria es densa; primero se libera todo slot con offsets negativos
+    // y solo entonces se fijan las posiciones definitivas.
+    for (const update of buildReorderWrites(orderedIds)) {
       const { error } = await supabase
         .from("property_images")
         .update({ position: update.position })

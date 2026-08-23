@@ -216,6 +216,11 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                   inputMode="numeric"
                   {...form.register("bedrooms", { valueAsNumber: true })}
                 />
+                {form.formState.errors.bedrooms?.message ? (
+                  <p className="text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors.bedrooms.message}
+                  </p>
+                ) : null}
               </FormItem>
               <FormItem>
                 <FormLabel htmlFor="bathrooms">Baños</FormLabel>
@@ -226,6 +231,11 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                   inputMode="numeric"
                   {...form.register("bathrooms", { valueAsNumber: true })}
                 />
+                {form.formState.errors.bathrooms?.message ? (
+                  <p className="text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors.bathrooms.message}
+                  </p>
+                ) : null}
               </FormItem>
               <FormItem>
                 <FormLabel htmlFor="surface_m2">m²</FormLabel>
@@ -237,6 +247,11 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                   inputMode="decimal"
                   {...form.register("surface_m2", { valueAsNumber: true })}
                 />
+                {form.formState.errors.surface_m2?.message ? (
+                  <p className="text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors.surface_m2.message}
+                  </p>
+                ) : null}
               </FormItem>
             </div>
 
@@ -311,6 +326,11 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                   inputMode="decimal"
                   {...form.register("lat", { valueAsNumber: true })}
                 />
+                {form.formState.errors.lat?.message ? (
+                  <p className="text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors.lat.message}
+                  </p>
+                ) : null}
               </FormItem>
               <FormItem>
                 <FormLabel htmlFor="lng">Longitud</FormLabel>
@@ -321,6 +341,11 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                   inputMode="decimal"
                   {...form.register("lng", { valueAsNumber: true })}
                 />
+                {form.formState.errors.lng?.message ? (
+                  <p className="text-[0.8rem] font-medium text-destructive">
+                    {form.formState.errors.lng.message}
+                  </p>
+                ) : null}
               </FormItem>
             </div>
           </div>
