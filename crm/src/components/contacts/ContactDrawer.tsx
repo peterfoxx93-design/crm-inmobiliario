@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 import { updateContact } from "@/app/actions/contacts";
 import { ActivityFeed } from "@/components/shared/ActivityFeed";
@@ -25,14 +24,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { createClient } from "@/lib/supabase/client";
 import { CONTACT_STATUS_META } from "@/lib/constants";
 import type { Activity, Contact } from "@/lib/types";
 import type { DealCreateDialogProps } from "@/components/contacts/DealCreateDialog";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
 
 export interface ContactDrawerProps {
   contact: Contact;
@@ -53,7 +48,8 @@ export function ContactDrawer({
   const [fetched, setFetched] = useState<{
     key: string;
     activities: Activity[];
-  }>({ key: "", activities: [] });
+    error: string | null;
+  }>({ key: "", activities: [], error: null });
   const isLoadingActivities = fetched.key !== fetchKey;
   const activities = fetched.activities;
 
@@ -62,6 +58,9 @@ export function ContactDrawer({
   useEffect(() => {
     if (!open || !isLoadingActivities) return;
     let cancelled = false;
+    // Cliente browser de @supabase/ssr: la sesion vive en cookies compartidas
+    // con el server (un cliente crudo de supabase-js no tendria sesion).
+    const supabase = createClient();
 
     supabase
       .from("activities")
@@ -69,9 +68,13 @@ export function ContactDrawer({
       .eq("contact_id", contact.id)
       .order("created_at", { ascending: false })
       .limit(100)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!cancelled) {
-          setFetched({ key: fetchKey, activities: (data ?? []) as Activity[] });
+          setFetched({
+            key: fetchKey,
+            activities: (data ?? []) as Activity[],
+            error: error ? "No se ha podido cargar el historial." : null,
+          });
         }
       });
 
@@ -119,6 +122,13 @@ export function ContactDrawer({
           <section aria-label="Historial de actividades">
             {isLoadingActivities ? (
               <p className="text-sm text-muted-foreground">Cargando historial…</p>
+            ) : fetched.error ? (
+              <div role="alert" className="flex items-center gap-2 text-sm text-red-600">
+                {fetched.error}
+                <Button variant="outline" size="sm" onClick={reload}>
+                  Reintentar
+                </Button>
+              </div>
             ) : (
               <ActivityFeed activities={activities} />
             )}

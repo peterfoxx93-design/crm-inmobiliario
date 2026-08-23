@@ -98,6 +98,20 @@ async function requireProperty(
   if (!data) throw new ActionError("Propiedad no encontrada.");
 }
 
+async function requireDeal(
+  supabase: Supabase,
+  dealId: string,
+  agencyId: string,
+): Promise<void> {
+  const { data } = await supabase
+    .from("deals")
+    .select("id")
+    .eq("id", dealId)
+    .eq("agency_id", agencyId)
+    .maybeSingle();
+  if (!data) throw new ActionError("Oferta no encontrada.");
+}
+
 function toContactRow(data: ReturnType<typeof normalizeContactInput>) {
   return {
     full_name: data.full_name,
@@ -234,6 +248,7 @@ export async function addActivity(
 
     if (data.contactId) await requireContact(supabase, data.contactId, agencyId);
     if (data.propertyId) await requireProperty(supabase, data.propertyId, agencyId);
+    if (data.dealId) await requireDeal(supabase, data.dealId, agencyId);
 
     const { data: created, error } = await supabase
       .from("activities")
@@ -256,6 +271,8 @@ export async function addActivity(
     }
 
     revalidatePath("/contactos");
+    if (data.propertyId) revalidatePath(`/propiedades/${data.propertyId}`);
+    if (data.dealId) revalidatePath("/pipeline");
     return { id: created.id as string };
   });
 }
