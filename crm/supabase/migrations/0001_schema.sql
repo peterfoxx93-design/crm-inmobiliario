@@ -163,6 +163,19 @@ language sql stable security definer set search_path = public as $$
   select coalesce((select role = 'admin' from public.profiles where id = auth.uid()), false);
 $$;
 
+-- Branding publico para la pagina /login (Task 5): se consume PRE-auth con rol
+-- anon, por eso es SECURITY DEFINER (la RLS de agencies no deja leer a anon).
+-- El filtro `a.active` garantiza que una agencia inactiva o inexistente
+-- devuelve 0 filas -> la UI la bloquea con mensaje claro.
+create or replace function public.get_public_branding(p_slug text)
+returns table (name text, logo_url text, primary_color text)
+language sql stable security definer set search_path = public as $$
+  select a.name, a.logo_url, a.primary_color
+  from public.agencies a where a.slug = p_slug and a.active;
+$$;
+
+grant execute on function public.get_public_branding(text) to anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 3. Funciones de trigger + triggers
 -- ---------------------------------------------------------------------------

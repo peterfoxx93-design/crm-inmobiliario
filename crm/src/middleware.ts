@@ -25,10 +25,10 @@ export const config = {
   matcher: [
     /*
      * Protege todo excepto:
-     * - /login y /form/* (formularios públicos)
+     * - /login, /auth/* (callback de código) y /form/* (formularios públicos)
      * - /api/public/* (webhooks/endpoints anónimos)
      * - assets estáticos de Next (_next/static, _next/image), favicon e imágenes
      */
-    "/((?!login(?:$|/)|form/|api/public/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!login(?:$|/)|auth/|form/|api/public/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
