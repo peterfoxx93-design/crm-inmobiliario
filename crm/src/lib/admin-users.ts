@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import type { Agency, ProfileRole } from "@/lib/types";
+import type { Agency, AgencySettings, ProfileRole } from "@/lib/types";
 import { isAdminRole, memberManagementError } from "@/lib/settings-access";
 import { getUser, createServerSupabase } from "@/lib/supabase/server";
 import { inviteSchema, type InviteUserInput } from "@/lib/validators/user";
@@ -28,8 +28,13 @@ import { inviteSchema, type InviteUserInput } from "@/lib/validators/user";
  *     (no envía email; queda disponible para la UI/resend de Ajustes).
  */
 
-/** Crea el client admin con service_role (nunca exponer al cliente). */
-function createAdminSupabase() {
+/**
+ * Crea el client admin con service_role (nunca exponer al cliente).
+ * Exportado desde Task 18: el endpoint publico de leads y la pagina
+ * /form/[slug] (ambos server-only) lo usan para resolver slug -> agencia,
+ * algo que el rol anon no puede leer por RLS.
+ */
+export function createAdminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -303,6 +308,28 @@ export async function updateAgencyBrandingRow(
 
   if (error) {
     throw new Error("No se han podido guardar los cambios de la agencia.");
+  }
+}
+
+/**
+ * Update de `agencies.settings` completo con service_role (Task 18). La RLS
+ * solo deja escribir agencies al super_admin; el guard de rol del llamador
+ * se aplica en la server action ANTES de llegar aqui (mismo patron que
+ * updateAgencyBrandingRow). El merge de claves lo hace el llamante para no
+ * pisar `sla_lead_hours` / `pipeline_stage_days` existentes.
+ */
+export async function updateAgencySettingsRow(
+  agencyId: string,
+  settings: AgencySettings,
+): Promise<void> {
+  const admin = createAdminSupabase();
+  const { error } = await admin
+    .from("agencies")
+    .update({ settings })
+    .eq("id", agencyId);
+
+  if (error) {
+    throw new Error("No se han podido guardar los ajustes de captación.");
   }
 }
 

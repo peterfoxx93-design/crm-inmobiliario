@@ -115,4 +115,11 @@ describe("parseSettingsTab", () => {
       "usuarios",
     );
   });
+
+  it("reconoce la tab captacion (Task 18)", () => {
+    expect(parseSettingsTab(asParams("captacion"))).toBe("captacion");
+    expect(parseSettingsTab(asParams(["captacion", "usuarios"]))).toBe(
+      "captacion",
+    );
+  });
 });

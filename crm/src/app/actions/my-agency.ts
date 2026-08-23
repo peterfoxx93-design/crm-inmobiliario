@@ -8,6 +8,7 @@ import {
   resolveSettingsActor,
   setUserActive,
   updateAgencyBrandingRow,
+  updateAgencySettingsRow,
 } from "@/lib/admin-users";
 import { validateImageFile } from "@/lib/image-upload";
 import { createServerSupabase } from "@/lib/supabase/server";
@@ -195,5 +196,46 @@ export async function uploadAgencyLogo(
 
     revalidatePath("/", "layout");
     return { url: publicUrl.publicUrl };
+  });
+}
+
+/**
+ * Activa o desactiva la captacion web de la agencia del actor (Task 18).
+ * Solo admin/super_admin (resolveSettingsActor). El resto de la config del
+ * formulario web (showEmail/showMessage/thanksMessage) la gestiona el panel
+ * Maestro; aqui solo se toca `settings.web_form.enabled` preservando las
+ * demas claves. El update va por service_role porque la policy de agencies
+ * solo permite escribir al super_admin (patron Task 6/16).
+ */
+export async function setWebFormEnabledAction(
+  enabled: boolean,
+): Promise<ActionResult<{ enabled: boolean }>> {
+  return runAction(async () => {
+    if (typeof enabled !== "boolean") {
+      throw new ActionError("Solicitud no válida.");
+    }
+    const actor = await resolveSettingsActor("gestionar la captación web");
+
+    const supabase = await createServerSupabase();
+    const { data: agency } = await supabase
+      .from("agencies")
+      .select("slug, settings")
+      .eq("id", actor.agencyId)
+      .maybeSingle();
+    if (!agency) {
+      throw new ActionError("No se ha podido cargar la agencia.");
+    }
+
+    type WebFormSettings = Record<string, unknown>;
+    const currentSettings = (agency.settings ?? {}) as Record<string, unknown>;
+    const currentWebForm = (currentSettings.web_form ?? {}) as WebFormSettings;
+
+    await updateAgencySettingsRow(actor.agencyId, {
+      ...currentSettings,
+      web_form: { ...currentWebForm, enabled },
+    });
+
+    revalidatePath("/ajustes");
+    return { enabled };
   });
 }

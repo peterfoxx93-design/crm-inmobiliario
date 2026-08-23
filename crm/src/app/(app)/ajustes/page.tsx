@@ -1,10 +1,11 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertTriangle, Building2, Settings, Users } from "lucide-react";
+import { AlertTriangle, Building2, Globe, Settings, Users } from "lucide-react";
 
 import { BrandingForm } from "@/components/settings/BrandingForm";
 import { UsersManager } from "@/components/settings/UsersManager";
+import { WebCapturePanel } from "@/components/settings/WebCapturePanel";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TableSkeleton } from "@/components/shared/Skeletons";
 import { listAgencyUsers } from "@/lib/admin-users";
@@ -22,8 +23,8 @@ interface PageProps {
 }
 
 /**
- * Ajustes de la agencia (Task 16): tabs por URL (`?tab=usuarios|branding`,
- * patron Agenda). Los agents ven una pagina informativa sin edicion; los
+ * Ajustes de la agencia (Task 16): tabs por URL
+ * (`?tab=usuarios|branding|captacion`, patron Agenda). Los agents ven una pagina informativa sin edicion; los
  * admin/super_admin gestionan miembros y branding de SU agencia efectiva
  * (`active_agency_id ?? agency_id`). Un super_admin sin impersonar (sin
  * agencia) recibe un aviso claro en lugar de un error.
@@ -117,6 +118,18 @@ export default async function Page({ searchParams }: PageProps) {
             <Users aria-hidden className="size-4" />
             Usuarios
           </Link>
+          <Link
+            href="/ajustes?tab=captacion"
+            aria-current={tab === "captacion" ? "page" : undefined}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm ${
+              tab === "captacion"
+                ? "bg-primary text-primary-foreground"
+                : "bg-background hover:bg-muted"
+            }`}
+          >
+            <Globe aria-hidden className="size-4" />
+            Captación web
+          </Link>
         </nav>
       </div>
 
@@ -128,6 +141,8 @@ export default async function Page({ searchParams }: PageProps) {
           <UsuariosContent
             currentUserId={profileRow.id}
           />
+        ) : tab === "captacion" ? (
+          <CaptacionContent agencyId={effectiveAgencyId} />
         ) : (
           <BrandingContent agencyId={effectiveAgencyId} />
         )}
@@ -202,6 +217,49 @@ async function BrandingContent({ agencyId }: { agencyId: string }) {
       initialName={agency.name}
       initialLogoUrl={agency.logo_url}
       initialColor={agency.primary_color}
+    />
+  );
+}
+
+interface WebFormSettings {
+  enabled?: boolean;
+  showEmail?: boolean;
+  showMessage?: boolean;
+  thanksMessage?: string;
+}
+
+/**
+ * Tab captacion web (Task 18): slug de la agencia efectiva + estado actual
+ * de settings.web_form para el toggle y el snippet iframe. Lectura por RLS
+ * (la agencia ya viene validada del guard de rol del propio page).
+ */
+async function CaptacionContent({ agencyId }: { agencyId: string }) {
+  const supabase = await createServerSupabase();
+  const { data: agency } = await supabase
+    .from("agencies")
+    .select("slug, settings")
+    .eq("id", agencyId)
+    .maybeSingle();
+
+  if (!agency?.slug) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="No se ha podido cargar la agencia"
+        description="Comprueba tu conexión e inténtalo de nuevo en unos segundos."
+      />
+    );
+  }
+
+  const settings = (agency.settings ?? {}) as Record<string, unknown>;
+  const webForm = (settings.web_form ?? {}) as WebFormSettings;
+
+  return (
+    <WebCapturePanel
+      slug={agency.slug}
+      enabled={webForm.enabled ?? false}
+      showEmail={webForm.showEmail ?? false}
+      showMessage={webForm.showMessage ?? false}
     />
   );
 }
