@@ -20,6 +20,8 @@ describe("sanitizeNextPath", () => {
     // Open-redirects clásicos:
     ["//evil.com"],
     ["///evil.com"],
+    ["/\\evil.com"],
+    ["/\\/evil.com"],
     ["https://evil.com"],
     ["http://evil.com/ruta"],
     ["javascript:alert(1)"],
@@ -71,7 +73,7 @@ describe("resolvePostLoginPath", () => {
     },
   );
 
-  it.each([["//evil.com"], ["https://evil.com"], ["javascript:alert(1)"]])(
+  it.each([["//evil.com"], ["/\\evil.com"], ["https://evil.com"], ["javascript:alert(1)"]])(
     "con next invalido (%j) devuelve '/'",
     (input) => {
       expect(resolvePostLoginPath(input)).toBe("/");

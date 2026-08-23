@@ -9,11 +9,17 @@ export const AGENCY_SLUG_STORAGE_KEY = "agency_slug";
 /**
  * O1 (enmienda controller): valida el parámetro `next` contra open-redirect.
  * Solo se aceptan rutas internas que empiecen por "/" y NO empiecen por "//"
- * (ni "\\", ni esquemas absolutos como https: o javascript:).
+ * ni "/\" (los navegadores normalizan "\" a "/", así que "/\evil.com" es
+ * equivalente a "//evil.com"), ni esquemas absolutos como https: o javascript:.
  * Si no pasa la validación se devuelve "/", nunca el valor original.
  */
 export function sanitizeNextPath(raw: string | null | undefined): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+  if (
+    !raw ||
+    !raw.startsWith("/") ||
+    raw.startsWith("//") ||
+    raw.startsWith("/\\")
+  ) {
     return "/";
   }
   return raw;
