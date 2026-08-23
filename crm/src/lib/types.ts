@@ -21,7 +21,8 @@ export type ProfileRole = "super_admin" | "admin" | "agent";
 // --- Settings jsonb ---
 
 export interface AgencySettings {
-  sla_lead_hours?: number;
+  /** Horas de SLA del primer contacto; null = sin límite. */
+  sla_lead_hours?: number | null;
   pipeline_stage_days?: Partial<Record<DealStage, number>>;
   [key: string]: unknown;
 }

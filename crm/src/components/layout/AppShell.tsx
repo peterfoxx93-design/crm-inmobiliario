@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { BottomBar } from "@/components/layout/BottomBar";
 import { Fab } from "@/components/layout/Fab";
+import { ImpersonationBanner } from "@/components/layout/ImpersonationBanner";
 import { Sidebar, useSidebarCollapsed } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import type { ProfileRole } from "@/lib/types";
@@ -19,6 +20,8 @@ interface AppShellProps {
   user: ShellUser;
   agencyName: string;
   agencyLogoUrl: string | null;
+  /** Suplantacion activa (Task 17): muestra el banner ambar de salida. */
+  impersonation?: { agencyName: string } | null;
   children: ReactNode;
 }
 
@@ -28,8 +31,16 @@ interface AppShellProps {
  * - Movil (< md): Topbar + BottomBar fija + FAB de creacion rapida.
  * El ancho del sidebar se expone como `--sidebar-w` para que el contenido
  * se desplace en sync con el estado colapsado.
+ * Task 17: si hay suplantacion activa se renderiza el banner ambar fijo en
+ * lo alto de la columna de contenido y la Topbar se pega debajo de el.
  */
-export function AppShell({ user, agencyName, agencyLogoUrl, children }: AppShellProps) {
+export function AppShell({
+  user,
+  agencyName,
+  agencyLogoUrl,
+  impersonation = null,
+  children,
+}: AppShellProps) {
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   return (
@@ -45,11 +56,13 @@ export function AppShell({ user, agencyName, agencyLogoUrl, children }: AppShell
         onToggleCollapsed={toggleCollapsed}
       />
       <div className="flex min-h-dvh flex-col transition-[padding] duration-200 md:pl-[var(--sidebar-w)]">
+        {impersonation ? <ImpersonationBanner agencyName={impersonation.agencyName} /> : null}
         <Topbar
           fullName={user.fullName}
           email={user.email}
           avatarUrl={user.avatarUrl}
           role={user.role}
+          stickyTopClass={impersonation ? "top-10" : "top-0"}
         />
         {/* Padding inferior extra en movil para no quedar bajo la BottomBar */}
         <main className="flex flex-1 flex-col px-4 pt-4 pb-24 md:px-6 md:pb-6">

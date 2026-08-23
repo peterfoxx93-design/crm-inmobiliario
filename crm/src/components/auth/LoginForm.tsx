@@ -30,6 +30,8 @@ interface LoginFormProps {
   nextPath: string;
   /** true cuando el callback devolvió a /login?error=auth. */
   authError?: boolean;
+  /** true cuando el layout devolvió a /login?error=agencia (agencia desactivada, Task 17). */
+  agencyError?: boolean;
 }
 
 type Step = "cargando" | "slug" | "form";
@@ -71,7 +73,12 @@ async function fetchBranding(slug: string): Promise<PublicBranding | null> {
   return (data as PublicBranding[] | null)?.[0] ?? null;
 }
 
-export function LoginForm({ initialSlug, nextPath, authError }: LoginFormProps) {
+export function LoginForm({
+  initialSlug,
+  nextPath,
+  authError,
+  agencyError,
+}: LoginFormProps) {
   const router = useRouter();
 
   // Slug efectivo: ?agencia= tiene prioridad sobre el recordado en localStorage.
@@ -205,7 +212,11 @@ export function LoginForm({ initialSlug, nextPath, authError }: LoginFormProps) 
   }
 
   const brandColor = branding?.primary_color || "#2563eb";
-  const banner = authError ? AUTH_ERROR_BANNER : null;
+  const banner = agencyError
+    ? AGENCY_UNAVAILABLE
+    : authError
+      ? AUTH_ERROR_BANNER
+      : null;
 
   return (
     <div

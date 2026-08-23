@@ -305,3 +305,29 @@ export async function updateAgencyBrandingRow(
     throw new Error("No se han podido guardar los cambios de la agencia.");
   }
 }
+
+/**
+ * Cierra los registros de impersonacion abiertos del super_admin
+ * (`ended_at = now()` donde aun es null) con service_role (Task 17).
+ *
+ * Por que service_role: `impersonation_logs` es INMUTABLE desde clientes por
+ * diseno (RLS solo tiene policies SELECT+INSERT, sin UPDATE/DELETE); no se
+ * anade ninguna policy de update. El cierre lo hace este modulo SOLO despues
+ * de que la server action haya verificado con el cliente SSR que el llamador
+ * es super_admin con suplantacion activa (mismo patron inviteUser/
+ * updateAgencyBrandingRow). Llamarlo sin ese guard previo seria un bug.
+ */
+export async function closeOpenImpersonationLogs(
+  superAdminId: string,
+): Promise<void> {
+  const admin = createAdminSupabase();
+  const { error } = await admin
+    .from("impersonation_logs")
+    .update({ ended_at: new Date().toISOString() })
+    .eq("super_admin_id", superAdminId)
+    .is("ended_at", null);
+
+  if (error) {
+    throw new Error("No se ha podido cerrar el registro de suplantación.");
+  }
+}

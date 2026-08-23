@@ -20,6 +20,8 @@ function firstParam(value: string | string[] | undefined): string | undefined {
  * - `?next=` destino post-login: se resuelve en el servidor (O1 contra
  *   open-redirect; por defecto /dashboard) antes de pasarlo al formulario.
  * - `?error=auth` lo devuelve /auth/callback cuando el enlace ha caducado.
+ * - `?error=agencia` lo devuelve el layout del grupo (app) cuando la agencia
+ *   del usuario está desactivada (Task 17): cierra la sesión y avisa aquí.
  */
 export default async function LoginPage({
   searchParams,
@@ -29,9 +31,14 @@ export default async function LoginPage({
   const params = await searchParams;
   const agencia = firstParam(params.agencia)?.trim() || null;
   const nextPath = resolvePostLoginPath(firstParam(params.next));
-  const authError = firstParam(params.error) === "auth";
+  const error = firstParam(params.error);
 
   return (
-    <LoginForm initialSlug={agencia} nextPath={nextPath} authError={authError} />
+    <LoginForm
+      initialSlug={agencia}
+      nextPath={nextPath}
+      authError={error === "auth"}
+      agencyError={error === "agencia"}
+    />
   );
 }
