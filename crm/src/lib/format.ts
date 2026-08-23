@@ -28,6 +28,18 @@ export function buildReference(seq: number): string {
   return `REF-${String(seq).padStart(4, "0")}`;
 }
 
+const REFERENCE_PATTERN = /^REF-(\d+)$/;
+
+/**
+ * Extrae la secuencia numerica de una referencia ("REF-0042" -> 42).
+ * Devuelve null si el formato no encaja; la usa createProperty para
+ * calcular la siguiente referencia a partir de max(reference).
+ */
+export function parseReferenceSeq(reference: string): number | null {
+  const match = REFERENCE_PATTERN.exec(reference.trim());
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
 /**
  * true si han pasado mas de `limitDays` dias desde `stageUpdatedAt` hasta ahora
  * (alerta SLA del pipeline).

@@ -23,7 +23,7 @@ interface CreateAction {
 
 /** Destinos de creacion rapida (rutas nuevas; las paginas llegan en tareas posteriores). */
 const CREATE_ACTIONS: readonly CreateAction[] = [
-  { label: "Propiedad", href: "/propiedades/nueva", icon: Building2 },
+  { label: "Propiedad", href: "/propiedades/nuevo", icon: Building2 },
   { label: "Contacto", href: "/contactos/nuevo", icon: UserPlus },
   { label: "Tarea", href: "/agenda/nueva", icon: CalendarPlus },
 ];

@@ -55,7 +55,7 @@ export default async function Page({ searchParams }: PageProps) {
             Cartera de inmuebles de la agencia con filtros y búsqueda.
           </p>
         </div>
-        <Button render={<Link href="/propiedades/nueva" />}>
+        <Button render={<Link href="/propiedades/nuevo" />}>
           <Plus data-icon="inline-start" aria-hidden />
           Nueva propiedad
         </Button>
@@ -101,12 +101,33 @@ async function PropertiesContent({
         title="Aún no hay propiedades"
         description="Da de alta tu primer inmueble para empezar a gestionar la cartera."
         cta={
-          <Button render={<Link href="/propiedades/nueva" />}>
+          <Button render={<Link href="/propiedades/nuevo" />}>
             <Plus data-icon="inline-start" aria-hidden />
             Nueva propiedad
           </Button>
         }
       />
+    );
+  }
+
+  // Deuda T9 saldada: si los filtros cambiaron mientras se navega, la pagina
+  // actual puede quedar fuera de rango (total > 0 pero 0 filas en esta pagina).
+  if (result.properties.length === 0 && filters.page > 1) {
+    const firstQs = filtersToSearchParams({ ...filters, page: 1 }).toString();
+    return (
+      <>
+        <PropertyFiltersBar filters={filters} />
+        <EmptyState
+          icon={AlertTriangle}
+          title="Esta página quedó fuera de rango"
+          description="La lista cambió mientras navegabas. Vuelve a la primera página para ver los resultados actuales."
+          cta={
+            <Button render={<Link href={firstQs ? `/propiedades?${firstQs}` : "/propiedades"} />}>
+              Ir a la primera página
+            </Button>
+          }
+        />
+      </>
     );
   }
 
