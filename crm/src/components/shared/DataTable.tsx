@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import {
   createPaginatedRowModel,
   flexRender,
@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getRowRange } from "@/lib/table-pagination";
+import { clampPageIndex, getRowRange } from "@/lib/table-pagination";
 import { cn } from "@/lib/utils";
 
 /**
@@ -93,7 +93,18 @@ export function DataTable<TData>({
   const totalRows = data.length;
   const pageCount = Math.max(1, table.getPageCount());
   const { pageIndex } = table.state.pagination;
-  const { from, to } = getRowRange(pageIndex, pageSize, totalRows);
+
+  // Pagina huerfana: si pageCount baja (p. ej. se borra la ultima fila de la
+  // ultima pagina) y el usuario sigue en pageIndex >= pageCount, volvemos a la
+  // ultima pagina valida. Logica pura testada en table-pagination.ts.
+  const safePageIndex = clampPageIndex(pageIndex, pageCount);
+  useEffect(() => {
+    if (safePageIndex !== pageIndex) {
+      table.setPageIndex(safePageIndex);
+    }
+  }, [safePageIndex, pageIndex, table]);
+
+  const { from, to } = getRowRange(safePageIndex, pageSize, totalRows);
 
   if (isLoading) {
     return <TableSkeleton rows={Math.min(pageSize, 8)} columns={columns.length} className={className} />;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +25,14 @@ interface ConfirmDialogProps {
   onConfirm: () => void | Promise<void>;
 }
 
+const CONFIRM_ERROR_MESSAGE =
+  "No se ha podido completar la acción. Inténtalo de nuevo.";
+
 /**
  * Dialogo de confirmacion para acciones destructivas (Task 8).
  * Sobre Dialog de shadcn/base-ui (no hay AlertDialog en ui/); cierra al confirmar.
+ * Si `onConfirm` rechaza, el error se muestra dentro del dialogo y este
+ * permanece abierto para reintentar o cancelar.
  */
 export function ConfirmDialog({
   open,
@@ -40,12 +45,23 @@ export function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Al reabrir el dialogo se limpia el error de un intento anterior.
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open]);
 
   async function handleConfirm() {
     try {
       setIsPending(true);
+      setError(null);
       await onConfirm();
       onOpenChange(false);
+    } catch {
+      // No tragamos el fallo: lo hacemos visible al usuario y el dialogo
+      // permanece abierto para reintentar.
+      setError(CONFIRM_ERROR_MESSAGE);
     } finally {
       setIsPending(false);
     }
@@ -58,7 +74,12 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          {error ? (
+            <p role="alert" className="w-full text-sm text-destructive sm:order-first">
+              {error}
+            </p>
+          ) : null}
           <DialogClose render={<Button variant="outline" disabled={isPending} />}>
             {cancelLabel}
           </DialogClose>

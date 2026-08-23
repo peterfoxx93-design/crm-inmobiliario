@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getRowRange } from "@/lib/table-pagination";
+import { clampPageIndex, getRowRange } from "@/lib/table-pagination";
 
 describe("getRowRange", () => {
   it("calcula el rango de la primera pagina completa", () => {
@@ -33,5 +33,39 @@ describe("getRowRange", () => {
     expect(getRowRange(Number.NaN, 10, 23)).toEqual({ from: 1, to: 10 });
     expect(getRowRange(0, Number.NaN, 23)).toEqual({ from: 1, to: 10 });
     expect(getRowRange(0, 10, Number.NaN)).toEqual({ from: 0, to: 0 });
+  });
+});
+
+describe("clampPageIndex", () => {
+  it("devuelve el indice sin cambios si esta en rango", () => {
+    expect(clampPageIndex(0, 3)).toBe(0);
+    expect(clampPageIndex(2, 3)).toBe(2);
+  });
+
+  it("satura un indice huerfano a la ultima pagina valida", () => {
+    // tras borrar la ultima fila de la ultima pagina: pageIndex 2 con pageCount 2
+    expect(clampPageIndex(2, 2)).toBe(1);
+    expect(clampPageIndex(99, 3)).toBe(2);
+  });
+
+  it("satura indices negativos a la primera pagina", () => {
+    expect(clampPageIndex(-4, 3)).toBe(0);
+  });
+
+  it("garantiza al menos una pagina aunque pageCount sea invalido", () => {
+    expect(clampPageIndex(0, 0)).toBe(0);
+    expect(clampPageIndex(5, 0)).toBe(0);
+    expect(clampPageIndex(5, Number.NaN)).toBe(0);
+  });
+
+  it("es tolerante a entradas no finitas", () => {
+    // Igual que getRowRange: cualquier indice no finito se trata como invalido.
+    expect(clampPageIndex(Number.NaN, 3)).toBe(0);
+    expect(clampPageIndex(Number.POSITIVE_INFINITY, 3)).toBe(0);
+    expect(clampPageIndex(5, Number.NaN)).toBe(0);
+  });
+
+  it("trunca indices decimales", () => {
+    expect(clampPageIndex(1.9, 3)).toBe(1);
   });
 });

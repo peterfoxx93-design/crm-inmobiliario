@@ -15,6 +15,18 @@ function sanitizeInt(value: number, fallback: number): number {
 }
 
 /**
+ * Satura `pageIndex` al ultimo indice valido para `pageCount`.
+ * Evita paginas huerfanas cuando pageCount baja (p. ej. se borra la ultima
+ * fila de la ultima pagina y el usuario sigue situado en pageIndex >= pageCount).
+ * Tolerante a entradas invalidas; pageCount minimo 1.
+ */
+export function clampPageIndex(pageIndex: number, pageCount: number): number {
+  if (!Number.isFinite(pageIndex)) return 0;
+  const pages = Number.isFinite(pageCount) ? Math.max(1, Math.floor(pageCount)) : 1;
+  return Math.min(Math.max(0, Math.floor(pageIndex)), pages - 1);
+}
+
+/**
  * Calcula el rango "Mostrando X-Y de Z" del pie de una tabla paginada.
  * Satura `pageIndex` a la ultima pagina valida y tolera entradas invalidas.
  */
