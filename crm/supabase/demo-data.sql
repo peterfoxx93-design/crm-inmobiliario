@@ -85,7 +85,9 @@ begin
     (p3, 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80', 0),
     (p4, 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80', 0),
     (p4, 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', 1),
-    (p4, 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 2);
+    (p4, 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 2),
+    (p5, 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80', 0),
+    (p5, 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80', 1);
 
   -- ============ CONTACTOS ============
   insert into public.contacts
