@@ -156,7 +156,7 @@ function SidebarLink({
         "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          : "text-sidebar-foreground/75 hover:bg-muted hover:text-foreground",
         collapsed && "justify-center px-0",
       )}
     >

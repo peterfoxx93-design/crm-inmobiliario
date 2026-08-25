@@ -17,7 +17,7 @@ export interface DealPropertySummary {
   id: string;
   title: string;
   price: number | null;
-  property_images: { url: string }[];
+  property_images: { url: string; position: number }[];
 }
 
 /** Agente propietario del deal. */

@@ -25,27 +25,28 @@ export async function listDeals(): Promise<DealWithRelations[]> {
       [
         "*",
         "contact:contacts!deals_contact_id_fkey(full_name)",
-        "property:properties!deals_property_id_fkey(id,title,price,property_images(url))",
+        "property:properties!deals_property_id_fkey(id,title,price,property_images(url,position))",
         "agent:profiles!deals_agent_id_fkey(full_name,avatar_url)",
       ].join(","),
     )
     .is("won", null)
     .order("stage", { ascending: true })
-    .order("created_at", { ascending: false })
-    // Portada de cada propiedad = imagen de menor posicion.
-    .order("position", { ascending: true, referencedTable: "property_images" });
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(`No se ha podido cargar el pipeline: ${error.message}`);
   }
 
-  // Primera imagen de cada propiedad: la de menor posicion (portada).
+  // Portada de cada propiedad: imagen de menor posicion (orden en JS para
+  // evitar embeds con `order` multi-nivel que PostgREST no soporta).
   const deals = ((data ?? []) as unknown as DealWithRelations[]).map((deal) => ({
     ...deal,
     property: deal.property
       ? {
           ...deal.property,
-          property_images: [...(deal.property.property_images ?? [])].slice(0, 1),
+          property_images: [...(deal.property.property_images ?? [])]
+            .sort((a, b) => a.position - b.position)
+            .slice(0, 1),
         }
       : null,
   }));
