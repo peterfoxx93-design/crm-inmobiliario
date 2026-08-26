@@ -35,6 +35,7 @@ export async function listContacts(
   filters: ContactFilters,
 ): Promise<ContactListResult> {
   const supabase = await createServerSupabase();
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
   const page = Math.max(1, Math.floor(filters.page));
   const from = (page - 1) * CONTACT_PAGE_SIZE;
@@ -59,6 +60,7 @@ export async function listContacts(
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.source) query = query.eq("source", filters.source);
   if (filters.assigned_to) query = query.eq("assigned_to", filters.assigned_to);
+  if (effectiveAgencyId) query = query.eq("agency_id", effectiveAgencyId as string);
 
   const { data, count, error } = await query;
   if (error) {
@@ -118,6 +120,7 @@ export async function getContactDetail(
   id: string,
 ): Promise<(Contact & { assigned_agent: AssignedAgent | null }) | null> {
   const supabase = await createServerSupabase();
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
   const { data, error } = await supabase
     .from("contacts")
@@ -131,6 +134,7 @@ export async function getContactDetail(
     throw new Error(`No se ha podido cargar el contacto: ${error.message}`);
   }
   if (!data) return null;
+  if (effectiveAgencyId && (data as Contact).agency_id !== (effectiveAgencyId as string)) return null;
 
   return data as Contact & { assigned_agent: AssignedAgent | null };
 }

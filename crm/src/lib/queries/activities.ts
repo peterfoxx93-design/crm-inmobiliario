@@ -24,12 +24,14 @@ export async function listActivities(
   limit = 100,
 ): Promise<ActivityWithAuthor[]> {
   const supabase = await createServerSupabase();
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
   let query = supabase
     .from("activities")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (effectiveAgencyId) query = query.eq("agency_id", effectiveAgencyId as string);
 
   if (scope.contactId) query = query.eq("contact_id", scope.contactId);
   if (scope.propertyId) query = query.eq("property_id", scope.propertyId);

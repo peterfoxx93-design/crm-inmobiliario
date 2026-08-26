@@ -41,6 +41,8 @@ export async function listProperties(
   filters: PropertyFilters,
 ): Promise<PropertyListResult> {
   const supabase = await createServerSupabase();
+  // Impersonación: super_admin con active_agency_id debe ver solo esa agencia (RLS actual permite todo por is_super_admin)
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
   const page = Math.max(1, Math.floor(filters.page));
   const from = (page - 1) * PROPERTY_PAGE_SIZE;
@@ -68,6 +70,7 @@ export async function listProperties(
   if (filters.property_type) query = query.eq("property_type", filters.property_type);
   if (typeof filters.priceMin === "number") query = query.gte("price", filters.priceMin);
   if (typeof filters.priceMax === "number") query = query.lte("price", filters.priceMax);
+  if (effectiveAgencyId) query = query.eq("agency_id", effectiveAgencyId as string);
 
   const { data, count, error } = await query;
   if (error) {
@@ -99,6 +102,7 @@ export async function getPropertyDetail(
   id: string,
 ): Promise<PropertyDetail | null> {
   const supabase = await createServerSupabase();
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
   const { data, error } = await supabase
     .from("properties")
@@ -110,6 +114,7 @@ export async function getPropertyDetail(
     throw new Error(`No se ha podido cargar la propiedad: ${error.message}`);
   }
   if (!data) return null;
+  if (effectiveAgencyId && (data as Property).agency_id !== (effectiveAgencyId as string)) return null;
 
   return {
     ...(data as Property),

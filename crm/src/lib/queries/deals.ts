@@ -18,8 +18,9 @@ export type { DealWithRelations };
  */
 export async function listDeals(): Promise<DealWithRelations[]> {
   const supabase = await createServerSupabase();
+  const { data: effectiveAgencyId } = await supabase.rpc("get_my_agency_id");
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("deals")
     .select(
       [
@@ -32,6 +33,9 @@ export async function listDeals(): Promise<DealWithRelations[]> {
     .is("won", null)
     .order("stage", { ascending: true })
     .order("created_at", { ascending: false });
+  if (effectiveAgencyId) query = query.eq("agency_id", effectiveAgencyId as string);
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`No se ha podido cargar el pipeline: ${error.message}`);
