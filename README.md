@@ -19,8 +19,9 @@ Vercel. Tests con Vitest (unit/componente) y Playwright (E2E).
 4. [Alta de una inmobiliaria cliente](#alta-de-una-inmobiliaria-cliente)
 5. [Conexión con la web del cliente](#conexión-con-la-web-del-cliente)
 6. [Verificación multi-agencia en producción](#verificación-multi-agencia-en-producción)
-7. [Gates pendientes antes de cerrar el MVP](#gates-pendientes-antes-de-cerrar-el-mvp)
+7. [Gates de cierre (MVP) — superados 26-08-2026](#gates-de-cierre-mvp--superados-26-08-2026)
 8. [Solución de problemas](#solución-de-problemas)
+9. [Operación](#operación)
 
 ---
 
@@ -358,3 +359,11 @@ tras verificarlo con dos agencias reales o de prueba (A y B, creadas desde
 - **La migración falla en el bloque de Storage**: crea los buckets
   `property-images` y `branding` a mano (públicos) y reaplica solo la sección
   7 de `0001_schema.sql` (detalle en `crm/supabase/VERIFY.md`, paso A).
+
+---
+
+## Operación
+
+Runbook completo post-MVP: ver [`OPERATIONS.md`](OPERATIONS.md) — onboarding/offboarding,
+suplantación, monitor, backups, despliegues, incidentes y seguridad (prod
+`phvirucslmmnkrcebtas` + Vercel `crm-inmobiliario-phi-two`, tag `v1.0-gates-pass`).
