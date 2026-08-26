@@ -98,3 +98,20 @@ Esperado: un array con la agencia demo.
 - [ ] `select * from agencies;` devuelve la fila demo
 - [ ] REST anon devuelve `[]`; REST service_role devuelve la fila demo
 - [ ] Login en la app (`npm run dev` en `crm/`) crea sesión y ve su perfil
+
+---
+
+## Paso E · Runbook E2E (Playwright)
+
+Requisito: BD migrada (pasos A-B) y buckets creados.
+
+1. Crear usuario demo `admin@demo.es` / `Demo1234!` / agencia `demo` (parametrizable `E2E_EMAIL`/`E2E_PASSWORD`/`E2E_AGENCY`):
+   - Authentication → Users → Add user: `admin@demo.es`, `Demo1234!`, Auto Confirm.
+   - SQL Editor:
+     ```sql
+     update public.profiles set agency_id=(select id from agencies where slug='demo')
+     where id=(select id from auth.users where email='admin@demo.es');
+     ```
+2. `npm run build` (webServer usa `next start`, no dev).
+3. `npx playwright install chromium`.
+4. `npm run test:e2e` — repetir 2× consecutivas; gate = PASS ×2 (datos con sufijo timestamp, no colisionan). Verificado 26-08: 32.4s/25.0s + 27.1s/24.4s.

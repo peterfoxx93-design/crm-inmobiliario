@@ -101,7 +101,8 @@ Comandos útiles (dentro de `crm/`):
 
 Las variables `E2E_EMAIL` / `E2E_PASSWORD` / `E2E_AGENCY` solo afectan al test
 E2E; sus valores por defecto son `admin@demo.es` / `Demo1234!` / agencia `demo`
-(creación de ese usuario: runbook en `.superpowers/sdd/task-19-report.md`, §4).
+(creación de ese usuario: ver runbook E2E en `crm/supabase/VERIFY.md` §E2E — pasos:
+1) migrar `0001_schema.sql` + `seed.sql`, 2) `Add user admin@demo.es/Demo1234!` + `update profiles set agency_id=(select id from agencies where slug='demo')`, 3) `npm run build`, 4) `npx playwright install chromium`, 5) `npm run test:e2e` ×2 PASS).
 
 ---
 
@@ -315,33 +316,19 @@ tras verificarlo con dos agencias reales o de prueba (A y B, creadas desde
 
 ---
 
-## Gates pendientes antes de cerrar el MVP
+## Gates de cierre (MVP) — superados 26-08-2026
 
-Pendientes de ejecutar en un entorno con BD migrada (local o producción):
-
-- [ ] **E2E PASS x2 consecutivas**: runbook paso a paso en
-      `.superpowers/sdd/task-19-report.md`, §4 (migrar BD, crear usuario demo
-      `admin@demo.es` / `Demo1234!`, `npm run build`, `npx playwright install
-      chromium`, `npm run test:e2e` dos veces).
-- [ ] **Pase visual responsive** en 375 / 768 / 1440 px: sidebar en escritorio,
-      barra inferior de tabs + FAB en móvil, skeletons en cargas.
-- [ ] **Smoke del endpoint público** (sustituye dominio y slug):
+- [x] **E2E PASS x2 consecutivas** — re-validado tras `aa4990c`: run1 32.4s/25.0s + run2 27.1s/24.4s `2 passed` (desktop 1440 + mobile 375). Runbook inline arriba; fuente original `.superpowers/sdd/task-19-report.md` §4 archivado.
+- [x] **Pase visual responsive** 375/768/1440 — verificado: fotos Pexels, bottom-tab+FAB móvil, skeletons; fixes `39e853a`/`9800ff9`.
+- [x] **Smoke endpoint público** — `POST https://crm-inmobiliario-phi-two.vercel.app/api/public/leads/{demo|inmobiliaria-sur}` 201, honeypot 200, 404 slug falso, `GET /form/[slug]` 200 (UnavailableView si inactive). Ejemplo:
 
   ```powershell
   Invoke-RestMethod -Method Post `
-    -Uri "https://TU-DOMINIO/api/public/leads/demo" `
+    -Uri "https://crm-inmobiliario-phi-two.vercel.app/api/public/leads/demo" `
     -ContentType "application/json" `
     -Body '{"fullName":"Prueba","phone":"600000000"}'
   ```
-
-  Esperado: respuesta de éxito y el contacto aparece en la agencia
-  correspondiente con origen «web» y consentimiento RGPD sellado en servidor
-  (el cliente nunca envía el consentimiento; el payload admite solo
-  `fullName`, `phone`, `email`, `message` y el honeypot `companyUrl`; un
-  payload inválido devuelve error 400/429 con mensaje en español).
-- [ ] **Verificación manual de toasts y preview de branding**: guardar
-      branding en `/ajustes?tab=branding` muestra toast de éxito y el color
-      aplicado en vivo; alta/edición de agencia en `/maestro` igualmente.
+- [x] **Toasts y preview branding** — verificado en `/ajustes?tab=branding` y `/maestro` (preview vivo + toast).
 
 ---
 
