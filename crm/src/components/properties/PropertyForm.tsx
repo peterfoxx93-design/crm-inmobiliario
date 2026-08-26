@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -188,7 +189,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
             />
 
             <FormItem>
-              <FormLabel htmlFor="price">Precio (EUR) *</FormLabel>
+              <Label htmlFor="price">Precio (EUR) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -208,7 +209,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
 
             <div className="grid grid-cols-3 gap-3 sm:col-span-1">
               <FormItem>
-                <FormLabel htmlFor="bedrooms">Habit.</FormLabel>
+                <Label htmlFor="bedrooms">Habit.</Label>
                 <Input
                   id="bedrooms"
                   type="number"
@@ -223,7 +224,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                 ) : null}
               </FormItem>
               <FormItem>
-                <FormLabel htmlFor="bathrooms">Baños</FormLabel>
+                <Label htmlFor="bathrooms">Baños</Label>
                 <Input
                   id="bathrooms"
                   type="number"
@@ -238,7 +239,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                 ) : null}
               </FormItem>
               <FormItem>
-                <FormLabel htmlFor="surface_m2">m²</FormLabel>
+                <Label htmlFor="surface_m2">m²</Label>
                 <Input
                   id="surface_m2"
                   type="number"
@@ -318,7 +319,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
             />
             <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-xs">
               <FormItem>
-                <FormLabel htmlFor="lat">Latitud</FormLabel>
+                <Label htmlFor="lat">Latitud</Label>
                 <Input
                   id="lat"
                   type="number"
@@ -333,7 +334,7 @@ export function PropertyForm({ mode, propertyId, defaults }: PropertyFormProps) 
                 ) : null}
               </FormItem>
               <FormItem>
-                <FormLabel htmlFor="lng">Longitud</FormLabel>
+                <Label htmlFor="lng">Longitud</Label>
                 <Input
                   id="lng"
                   type="number"
