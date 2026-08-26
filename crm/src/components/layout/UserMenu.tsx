@@ -73,7 +73,7 @@ export function UserMenu({ fullName, email, avatarUrl, role }: UserMenuProps) {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => void handleSignOut()}>
+        <DropdownMenuItem variant="destructive" onClick={() => void handleSignOut()}>
           <LogOut aria-hidden />
           Salir
         </DropdownMenuItem>

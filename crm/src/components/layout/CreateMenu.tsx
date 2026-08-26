@@ -62,7 +62,7 @@ export function CreateMenu({ variant = "button" }: CreateMenuProps) {
         {CREATE_ACTIONS.map((action) => (
           <DropdownMenuItem
             key={action.href}
-            onSelect={() => router.push(action.href)}
+            onClick={() => router.push(action.href)}
           >
             <action.icon aria-hidden />
             {action.label}

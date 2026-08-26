@@ -138,7 +138,7 @@ export function ContactsTable({
               <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setDrawerId(row.original.id)}>
+              <DropdownMenuItem onClick={() => setDrawerId(row.original.id)}>
                 Abrir ficha
               </DropdownMenuItem>
             </DropdownMenuContent>
