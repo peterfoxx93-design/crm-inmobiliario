@@ -75,19 +75,20 @@ begin
   select id into p4 from public.properties where reference = 'PRO-0004';
   select id into p5 from public.properties where reference = 'PRO-0005';
 
-  -- ============ IMAGENES (inmobiliarias reales, Unsplash) ============
+  -- ============ IMAGENES (inmobiliarias reales, Pexels - URLs verificadas) ============
   insert into public.property_images (property_id, url, position) values
-    (p1, 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80', 0),
-    (p1, 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80', 1),
-    (p2, 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80', 0),
-    (p2, 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80', 1),
-    (p2, 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80', 2),
-    (p3, 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80', 0),
-    (p4, 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80', 0),
-    (p4, 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', 1),
-    (p4, 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 2),
-    (p5, 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80', 0),
-    (p5, 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80', 1);
+    (p1, 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800', 0),
+    (p1, 'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=800', 1),
+    (p2, 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800', 0),
+    (p2, 'https://images.pexels.com/photos/164558/pexels-photo-164558.jpeg?auto=compress&cs=tinysrgb&w=800', 1),
+    (p2, 'https://images.pexels.com/photos/2089698/pexels-photo-2089698.jpeg?auto=compress&cs=tinysrgb&w=800', 2),
+    (p3, 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800', 0),
+    (p3, 'https://images.pexels.com/photos/1080721/pexels-photo-1080721.jpeg?auto=compress&cs=tinysrgb&w=800', 1),
+    (p4, 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800', 0),
+    (p4, 'https://images.pexels.com/photos/186077/pexels-photo-186077.jpeg?auto=compress&cs=tinysrgb&w=800', 1),
+    (p4, 'https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800', 2),
+    (p5, 'https://images.pexels.com/photos/380769/pexels-photo-380769.jpeg?auto=compress&cs=tinysrgb&w=800', 0),
+    (p5, 'https://images.pexels.com/photos/1170412/pexels-photo-1170412.jpeg?auto=compress&cs=tinysrgb&w=800', 1);
 
   -- ============ CONTACTOS ============
   insert into public.contacts
