@@ -107,8 +107,22 @@ export function ContactDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="grid gap-6 px-4 pb-8 lg:grid-cols-[minmax(0,1fr)_260px_minmax(0,1fr)]">
-          {/* Columna izquierda: perfil editable inline */}
+        <div className="grid gap-6 px-4 pb-8">
+          {/* Arriba: acciones rápidas — siempre visible sin scroll */}
+          <section
+            aria-label="Acciones rápidas"
+            className="rounded-xl border bg-muted/30 p-4"
+          >
+            <QuickActions
+              contactId={contact.id}
+              contactPhone={contact.phone}
+              propertyOptions={propertyOptions}
+              onActivitySaved={reload}
+              onOfferCreated={reload}
+            />
+          </section>
+
+          {/* Perfil editable */}
           <section aria-label="Perfil del contacto">
             <ContactProfileForm
               contact={contact}
@@ -118,7 +132,7 @@ export function ContactDrawer({
             />
           </section>
 
-          {/* Columna central: timeline */}
+          {/* Timeline */}
           <section aria-label="Historial de actividades">
             {isLoadingActivities ? (
               <p className="text-sm text-muted-foreground">Cargando historial…</p>
@@ -132,17 +146,6 @@ export function ContactDrawer({
             ) : (
               <ActivityFeed activities={activities} />
             )}
-          </section>
-
-          {/* Columna derecha: acciones rapidas */}
-          <section aria-label="Acciones rápidas">
-            <QuickActions
-              contactId={contact.id}
-              contactPhone={contact.phone}
-              propertyOptions={propertyOptions}
-              onActivitySaved={reload}
-              onOfferCreated={reload}
-            />
           </section>
         </div>
 
