@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Power } from "lucide-react";
+import { Loader2, Pencil, Plus, Power } from "lucide-react";
 import { toast } from "sonner";
 
 import { toggleAgencyActive } from "@/app/actions/agencies";
@@ -64,6 +64,19 @@ export function AgenciesTable({ rows }: AgenciesTableProps) {
 
   return (
     <>
+      <div className="mb-4 flex justify-end">
+        <Button
+          type="button"
+          onClick={() => {
+            setEditing(null);
+            setDialogOpen(true);
+          }}
+        >
+          <Plus aria-hidden />
+          Nueva agencia
+        </Button>
+      </div>
+
       {/* Escritorio: tabla */}
       <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
         <table className="w-full text-sm">
