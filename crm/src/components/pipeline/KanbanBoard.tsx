@@ -55,7 +55,12 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
   const [pendingMoves, setPendingMoves] = useState<
     Map<string, { stage: DealStage; at: string }>
   >(new Map());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Snapshot del deal abierto: al ganar la oferta el deal sale del listado de
+  // abiertos tras router.refresh(); con un snapshot el drawer sigue abierto y
+  // el aviso "Marcar propiedad como vendida" sigue siendo alcanzable.
+  const [selectedDeal, setSelectedDeal] = useState<DealWithRelations | null>(
+    null,
+  );
   const [isPending, startTransition] = useTransition();
   const dragGuardUntil = useRef(0);
 
@@ -77,7 +82,7 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
 
   function openDeal(dealId: string) {
     if (Date.now() < dragGuardUntil.current) return; // click residual de un drag
-    setSelectedId(dealId);
+    setSelectedDeal(items.find((deal) => deal.id === dealId) ?? null);
   }
 
   function clearPending(dealId: string, expectedAt?: string) {
@@ -135,7 +140,6 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
   }
 
   const grouped = groupDealsByStage(items);
-  const selectedDeal = selectedId ? (items.find((d) => d.id === selectedId) ?? null) : null;
 
   return (
     <>
@@ -167,7 +171,7 @@ export function KanbanBoard({ deals, stageDays }: KanbanBoardProps) {
         open={selectedDeal !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedId(null);
+            setSelectedDeal(null);
             router.refresh(); // refleja cambios del drawer al volver al board
           }
         }}

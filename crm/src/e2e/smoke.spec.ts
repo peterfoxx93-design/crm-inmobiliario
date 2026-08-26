@@ -122,7 +122,8 @@ test.describe("Flujo comercial completo", () => {
 
     // PropertyForm onSubmit: router.push(`/propiedades/${id}`); la cabecera
     // de la ficha muestra el titulo y StatusBadge "Borrador".
-    await page.waitForURL(/\/propiedades\/[^/]+$/);
+    // El lookahead excluye /propiedades/nuevo, que tambien cumple [^/]+$.
+    await page.waitForURL(/\/propiedades\/(?!nuevo$)[^/]+$/);
     const propertyUrl = new URL(page.url()).pathname;
     await expect(
       page.getByRole("heading", { name: PROPERTY_TITLE }),
@@ -176,8 +177,10 @@ test.describe("Flujo comercial completo", () => {
       .click();
 
     // El dialogo se cierra y la tabla se refresca con la fila nueva.
+    // Fila completa: el name de getByRole es subcadena por defecto y la celda
+    // de acciones ("Acciones de {nombre}") tambien contendria el nombre.
     await expect(nuevoContactoDialog).toBeHidden();
-    await expect(page.getByRole("cell", { name: CONTACT_NAME })).toBeVisible();
+    await expect(page.getByRole("row", { name: CONTACT_NAME })).toBeVisible();
 
     // --- 6. Abrir ficha 360 y registrar una llamada ---------------------------
     // ContactsTable.tsx: dropdown por fila "Acciones de {nombre}" ->
@@ -280,16 +283,33 @@ test.describe("Flujo comercial completo", () => {
     ).toBeHidden();
 
     // La ficha refleja el estado final "Vendido" (StatusBadge en cabecera).
-    await page.goto(propertyUrl);
-    await expect(page.getByText("Vendido", { exact: true })).toBeVisible();
+    // El SSR de Next puede servir datos con ~1-3s de retraso tras una
+    // escritura (cache de datos observada en Next 16): se sondea recargando
+    // con cache-buster hasta que el badge refleje el nuevo estado.
+    await expect
+      .poll(
+        async () => {
+          await page.goto(`${propertyUrl}?v=${Date.now()}`);
+          return page.getByText("Vendido", { exact: true }).isVisible();
+        },
+        { timeout: 20000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(true);
 
-    // La oferta cerrada desaparece del pipeline.
-    await page.goto("/pipeline");
-    await expect(
-      page.getByRole("button", {
-        name: `Abrir oferta de ${CONTACT_NAME}`,
-      }),
-    ).toHaveCount(0);
+    // La oferta cerrada desaparece del pipeline (mismo lag de lectura SSR).
+    await expect
+      .poll(
+        async () => {
+          await page.goto(`/pipeline?v=${Date.now()}`);
+          return page
+            .getByRole("button", {
+              name: `Abrir oferta de ${CONTACT_NAME}`,
+            })
+            .count();
+        },
+        { timeout: 20000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(0);
 
     // --- 11. Dashboard con KPIs --------------------------------------------------
     // KpiCards.tsx: seccion "Indicadores clave"; la tarjeta "Leads nuevos
