@@ -1,7 +1,8 @@
 # OPERATIONS — CRM Inmobiliario
 
-Runbook post-MVP `v1.0-gates-pass` (26-08-2026). Prod: Supabase `phvirucslmmnkrcebtas` + Vercel `crm-inmobiliario-phi-two.vercel.app`.
+Runbook post-MVP `v1.0-gates-pass` (26-08-2026) → `v1.0.1-manual` (27-08-2026). Prod: Supabase `phvirucslmmnkrcebtas` + Vercel `crm-inmobiliario-phi-two.vercel.app`.
 Stack: Next 16 / React 19 / Supabase Postgres+RLS+Auth+Storage / Resend.
+Manual: `MANUAL_USUARIO.md` (`db96af0`) + `docs/MANUAL_USUARIO.pdf` 2.4 MB / `docs/MANUAL_USUARIO.docx` 1.9 MB (`ecda633`, 20 capturas Playwright prod).
 
 ---
 
@@ -117,7 +118,32 @@ Sin paging dedicado aún: revisa Vercel+Supabase tras cada deploy y semanal.
 
 ---
 
-## 10. Contacto operativo
+## 10. Evidencia de cierre 27-08-2026
+
+**Verificación multi-agencia prod (post-fixes `a6af170`/`48ea161`/`105a25e`):**
+
+| Check | Resultado |
+|---|---|
+| `admin@fincas-mediterraneo.es / Mediterraneo2026!` (Fincas `93cdd7c0…` `#0ea5e9`) → `/propiedades` | `1 [REF-0001 Villa Cerro 92286ae5… borrador]` |
+| `/contactos` Fincas | `1 [Juan Rodriguez 9a343fcc… +18298363525 / gadgetstimesrd@gmail.com source=web consent=true]` |
+| `/pipeline` Fincas | `1 deal f95a1fa1… contacto 9a343fcc → prop 92286ae5` (`Juan → REF-0001`) — drag Kanban verificado OK |
+| `POST /api/public/leads/fincas-mediterraneo` incógnito | `201` creado, honeypot `200`, `GET /form/fincas-mediterraneo` `200` con thanksMessage personalizado |
+| Cross `fincas → demo (084d29a0…)` y `demo → fincas` (`properties/contacts/deals`) | `0` filas (RLS `agency_isolation` + `eq(agency_id, get_my_agency_id()) aa4990c/0002`) |
+| Direct ID cross `fincas→PRO-0001 554b30d3…` / `demo→Villa Cerro 92286ae5…` | `0` (detail `return null`) |
+| `admin@demo.es / Demo1234!` → `/propiedades` | `5 [PRO-0001..0005]` (no Villa Cerro) |
+| `peterfoxx93@gmail.com / Blujean9762#` sin suplantar → `/propiedades` | `6` agregadas (auditoría global: `is_super_admin() AND get_my_agency_id() IS NULL` → `0002`); escritura bloqueada `No tienes agencia activa`, suplantando Fincas → `1` |
+| `impersonation_logs` | `67dcd9d8…` abierto 27-08 + `started/ended` sellados al Salir |
+| `property-images` upload 2.65 MB | Fallaba 1 MB → fix `next.config.ts serverActions.bodySizeLimit 10mb a6af170` → 2 imágenes OK |
+| Sidebar contraste | `105a25e` `globals.css 0.968/0.92` + activo `font-semibold+border` |
+| Drawer Oferta | `48ea161` acciones arriba con borde — visible 360 px |
+| Screenshots prod | `crm/scripts/capture-manual.mjs` 20 PNG en `docs/screenshots/` |
+| Manual | `MANUAL_USUARIO.md db96af0` 20 secciones skill + `docs/MANUAL_USUARIO.pdf/docx/html ecda633` base64 |
+
+**Commits cierre:** `0a923e4` (runbook) → `a6af170` → `48ea161` → `105a25e` → `19a6c6f/db96af0` (manual) → `ecda633` (pdf/docx) → `v1.0.1-manual`.
+
+---
+
+## 11. Contacto operativo
 
 - Repo: `https://github.com/peterfoxx93-design/crm-inmobiliario` (`C:\Users\Pedro\CRM OC\crm inmobiliario`)
 - Prod: `https://crm-inmobiliario-phi-two.vercel.app` (`/login?agencia=demo`, `/form/{slug}`, `POST /api/public/leads/{slug}`)
