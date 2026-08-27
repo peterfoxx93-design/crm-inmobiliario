@@ -148,18 +148,18 @@ function SidebarLink({
   collapsed: boolean;
 }) {
   return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      title={collapsed ? item.label : undefined}
-      className={cn(
-        "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors",
-        active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/75 hover:bg-muted hover:text-foreground",
-        collapsed && "justify-center px-0",
-      )}
-    >
+      <Link
+       href={item.href}
+       aria-current={active ? "page" : undefined}
+       title={collapsed ? item.label : undefined}
+       className={cn(
+         "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors border border-transparent",
+         active
+           ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border-sidebar-border"
+           : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
+         collapsed && "justify-center px-0",
+       )}
+     >
       <Icon className="size-4 shrink-0" aria-hidden />
       {!collapsed && item.label}
     </Link>
